@@ -1,0 +1,4 @@
+Delta24
+*.fasta
+*seed*
+callgrind*
