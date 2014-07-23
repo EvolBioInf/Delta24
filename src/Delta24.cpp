@@ -35,70 +35,84 @@ int names_allocated=0;
 class matHash{
 	private:
 	float **tree;
-	float **tree_ptr;
 	float *fptr;
-	unsigned int *key_ptr;
 	list <float *> values;
-	list <float *> keys;
+	list <float *> keys; // keys is never read!
 	bool alloc;
 	unsigned int MAX;
+
 	public:
 	matHash(){
 	};
+
 	void init(unsigned int _MAX){
-		MAX=_MAX;
-		tree=(float **) calloc(MAX, sizeof(float **) );
+		MAX = _MAX;
+		tree= (float**) malloc(MAX * sizeof(float **));
+		for(size_t i=0; i<MAX; i++){
+			tree[i] = NULL;
+		}
 	};
+
 	void inc(unsigned int *key){
-		tree_ptr=tree;
-		key_ptr=key;
-		alloc=false;
-		for (int x=0; x<24; x++){
-			if((*key_ptr)>=MAX){
+		float **tree_ptr = tree;
+		unsigned int *key_ptr = key;
+
+		bool alloc = false;
+		for (int x=0; x< 24; x++){
+			if((*key_ptr) >= MAX){
 				cout << "Whoops, you lied to me!\n";
 			}
-			if(tree_ptr[*key_ptr]==0){
+
+			if( tree_ptr[*key_ptr] == NULL){
 				tree_ptr+=*key_ptr;
 				*tree_ptr=(float *) calloc (MAX, sizeof(float **)); //This is probably a horible way to do this...
 				keys.push_back( (*tree_ptr) );
-				key_ptr++;
 				tree_ptr=(float **)(*tree_ptr);
 				alloc=true;
 			}
-			else{
+			else {
 				tree_ptr=(float **)(tree_ptr[*key_ptr]);
-				key_ptr++;
 			}
+			key_ptr++;
 		}
 		if (alloc){
-			fptr=new float[25];
+			float *fptr = new float[25];
 			values.push_back(fptr);
-			*tree_ptr=fptr;
-			key_ptr=key;
+			*tree_ptr = fptr;
+			key_ptr = key;
+
 			for (int x=0; x<24; x++){
-				*fptr=float(*key_ptr);
-				fptr++;
-				key_ptr++;
+				fptr[x] = float(key_ptr[x]);
 			}
-			*fptr=1.0;
+
+			fptr[24] = 1.0;
 		}
 		else{
 			(*tree_ptr)[24]++;
 		};
 	}
+
 	void clear(void){
 		cout << "Clearing\n";
-		list <float *>::iterator it=values.begin(), end=values.end();
-		while(it!=end){free (*it); it++;};
+
+		for( auto it: values){
+			free(it);
+		}
 		values.clear();
-		it=keys.begin(); end=keys.end();
-		while(it!=end){free (*it); it++;};
+
+		for( auto it: keys){
+			free(it);
+		}
 		keys.clear();
 		cout << "Done\n";
-		memset(tree, 0, MAX*sizeof(float **) );
+
+		for( size_t i=0; i< MAX; i++){
+			tree[i] = NULL;
+		}
 	};
-       	list <float *>::iterator begin() { return values.begin(); }
-        list <float *>::iterator end() { return values.end(); }	
+
+	list <float *>::iterator begin() { return values.begin(); }
+	list <float *>::iterator end() { return values.end(); }	
 };
 
 template <class Type>
@@ -115,16 +129,16 @@ class matFile{
 	public:
 	float coverage;
 
-        matFile (){
+	matFile (){
 		/*basic constructor, just's sets everything to zeros.*/
 		sprintf(tempname, "tempfile_%d.bin", names_allocated);
 		names_allocated++;
-                sites=0;                                               
-                allocated=0;                                               
+				sites=0;                                               
+				allocated=0;                                               
 		block=NULL;
 		end_=NULL;
 		ptr=NULL;
-        };
+	};
 
 	void write(){
 		ofstream tempfile(tempname, ios::out | ios::binary);
@@ -139,6 +153,7 @@ class matFile{
 		sites=0;
 		allocated=0;
 	};
+
 	void close(){
 		if (block!=NULL) delete block;
 		block=NULL;
@@ -181,17 +196,17 @@ class matFile{
 		
 		*/
 		unsigned int total_size=0; 						//
-                for (int x=0; x<size_; x++) total_size+=a[x].size();			//
+				for (int x=0; x<size_; x++) total_size+=a[x].size();			//
 		sites=size_;
 		allocated=sites+total_size;					//
 		try {block=new Type [allocated];}
 		catch (std::bad_alloc& ba){std::cerr << "insufficent memory to read in buffer : " << ba.what() << '\n';}
-                Type *site=block;							//
-                for (int x=0; x<sites; x++){						//
-                	*site=a[x].size();
-                        site++;
-                	for (int y=0; y<a[x].size(); y++){ *site=a[x][y]; site++; };
-                };
+				Type *site=block;							//
+				for (int x=0; x<sites; x++){						//
+					*site=a[x].size();
+						site++;
+					for (int y=0; y<a[x].size(); y++){ *site=a[x][y]; site++; };
+				};
 		end_=site;								//
 	};
 	void add_reads(vector <Type> *a, unsigned int new_sites){
@@ -230,12 +245,12 @@ class matFile{
 			a[x].clear();
 		};
 
-                for (int x=sites; x<new_sites; x++){
-                        *new_site=a[x].size();
-                        new_site++;
-                        for (int y=0; y<a[x].size(); y++){ *new_site=a[x][y]; new_site++;}
+				for (int x=sites; x<new_sites; x++){
+						*new_site=a[x].size();
+						new_site++;
+						for (int y=0; y<a[x].size(); y++){ *new_site=a[x][y]; new_site++;}
 			a[x].clear();
-                };
+				};
 		
 		// Look, I even delete the old block so we don't have a memory leak! Wow, what skill! 
 		if  (block!=NULL) delete block;
@@ -264,7 +279,7 @@ class matFile{
 		public: 
 
 		//The very basic operators, nothing special here
-    		Type* ptr_;
+			Type* ptr_;
 		iterator(Type * other){	ptr_=other;};
 		iterator(){};	
 		Type* operator->() { return ptr_; }
@@ -281,14 +296,14 @@ class matFile{
 
 		//prefix incrementor. 
 		iterator & operator++(){
-		  	ptr_=ptr_+(*ptr_+1);
+			ptr_=ptr_+(*ptr_+1);
 			return *this;
 		};
 
 		//I really can't remember why I thought I needed this....
-	        int to_int (){
-                        return int(ptr_);
-                };
+			int to_int (){
+						return int(ptr_);
+				};
 	
 		//This returns the adress of C0 and N1 in the array [N0][C0]...[CN0][N1][
 		Type *inner_begin() { return ptr_+1; }
@@ -303,27 +318,36 @@ class matFile{
 //reads a SamRecord into a character array. The buffer filled in this function is used by a switch/case statement in the function "read" to construct a matFile. 
 int getCalls(SamRecord &this_record, char *buffer, int size){
 
-        int get=0;
+		int get=0;
 	if (size>200) size=200;
-        for (int x=0;x<size; x++){
-                get=this_record.getCigarInfo()->getQueryIndex(x);
+		for (int x=0;x<size; x++){
+				get=this_record.getCigarInfo()->getQueryIndex(x);
 		if (get>0){
-	                buffer[x]=this_record.getSequence(get);
+					buffer[x]=this_record.getSequence(get);
 		}
 		else{
 			buffer[x]='*';
 		}
-        }
-        return 1;
+		}
+		return 1;
 };
 
 //returns the sum of all the different reads at a specific site, and allows us to calculate read depth.
 float sum(float *X){
-return (X[0]+X[1]+X[2]+X[3]+X[4]+X[5]+X[6]+X[7]+X[8]+X[9]+X[10]+X[11]+X[12]+X[13]+X[14]+X[15]+X[16]+X[17]+X[18]+X[19]+X[20]+X[21]+X[22]+X[23]);
+	float ret = 0.0;
+	for( size_t i= 0; i< 24; i++ ){
+		ret += X[i];
+	}
+	return ret;
 }
+
 //let's overload it a bit.
 unsigned int sum(unsigned int *X){
-return (X[0]+X[1]+X[2]+X[3]+X[4]+X[5]+X[6]+X[7]+X[8]+X[9]+X[10]+X[11]+X[12]+X[13]+X[14]+X[15]+X[16]+X[17]+X[18]+X[19]+X[20]+X[21]+X[22]+X[23]);
+	auto ret = 0;
+	for( size_t i= 0; i< 24; i++ ){
+		ret += X[i];
+	}
+	return ret;
 }
 
 //A global. Can easily just be moved into main()
@@ -333,135 +357,135 @@ matHash matCounts;
 void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
 	/*this function totals up the number of occrance of A,C,G and T at site A and at site B, sorts them, and then makes the full 24 count*/
 
-        matFile<unsigned int>::iterator A;	//A pointer to site A.
-        matFile<unsigned int>::iterator B;	//A pointer to site B.
-        matFile<unsigned int>::iterator end;	//A pointer to the end of the matFile.
-        unsigned int *a, *b, *aend, *bend;	//Pointers to calls at sites A and B.
-        unsigned int mask=3;			//The mask to extract the call (i.e A,C,G or T) from the read number. 
+	matFile<unsigned int>::iterator A;	//A pointer to site A.
+	matFile<unsigned int>::iterator B;	//A pointer to site B.
+	matFile<unsigned int>::iterator end;	//A pointer to the end of the matFile.
+	unsigned int *a, *b, *aend, *bend;	//Pointers to calls at sites A and B.
+	unsigned int mask=3;			//The mask to extract the call (i.e A,C,G or T) from the read number. 
 
 	int X=0;				//An int to keep track of the number of sites read for debuging purposes. 
-        long unsigned int All=0;		//An int to store the number of reads covering a site. Probably won't show up in a final version.
+	long unsigned int All=0;		//An int to store the number of reads covering a site. Probably won't show up in a final version.
 
-        unsigned int count[24], countA[4]={0,0,0,0}, countB[4]={0,0,0,0}, sortA[4]={0,1,2,3}, sortB[4]={0,1,2,3};
+	unsigned int count[24], countA[4]={0,0,0,0}, countB[4]={0,0,0,0}, sortA[4]={0,1,2,3}, sortB[4]={0,1,2,3};
 	for (int f=0; f<LS; f++){
 
-	//thing thing thing
+		//thing thing thing
 		file[f].read();
-	        A=file[f].begin();
+		A=file[f].begin();
 		B=file[f][dist];
 		end=file[f].end();
-	        while (B!=end){
-		/*obtain seperate mono-nucleotide counts for sites A nd B .*/
+		while (B!=end){
+			/*obtain seperate mono-nucleotide counts for sites A nd B .*/
 
-		//Clear ALL the DATA!
-	                memset(count, 0, sizeof(int)*24);
-	                memset(countA, 0, sizeof(int)*4);
-	                memset(countB, 0, sizeof(int)*4);
+			//Clear ALL the DATA!
+			memset(count, 0, sizeof(int)*24);
+			memset(countA, 0, sizeof(int)*4);
+			memset(countB, 0, sizeof(int)*4);
 
-	                sortA[0]=0; sortA[1]=1; sortA[2]=2; sortA[3]=3;
-	                sortB[0]=0; sortB[1]=1; sortB[2]=2; sortB[3]=3;
+			sortA[0]=0; sortA[1]=1; sortA[2]=2; sortA[3]=3;
+			sortB[0]=0; sortB[1]=1; sortB[2]=2; sortB[3]=3;
 
-	                a=A.inner_begin();
-	                b=B.inner_begin();
-	                aend=A.inner_end();
-	                bend=B.inner_end();
+			a=A.inner_begin();
+			b=B.inner_begin();
+			aend=A.inner_end();
+			bend=B.inner_end();
 
-                while(a!=aend && b!=bend){
-                        countA[((*a)&mask)]+=1;
-                        a++;
-                        countB[((*b)&mask)]+=1;
-                        b++;
-                };
-                while (a!=aend){
-                        countA[ ((*a)&mask)]+=1;
-                        a++;
-                };
-                while (b!=bend){
-                        countB[ ((*b)&mask)]+=1;
-                        b++;
-                }
-                a=A.inner_begin();
-                b=B.inner_begin();
+			while(a!=aend && b!=bend){
+					countA[((*a)&mask)]+=1;
+					a++;
+					countB[((*b)&mask)]+=1;
+					b++;
+			};
+			while (a!=aend){
+					countA[ ((*a)&mask)]+=1;
+					a++;
+			};
+			while (b!=bend){
+					countB[ ((*b)&mask)]+=1;
+					b++;
+			}
+			a=A.inner_begin();
+			b=B.inner_begin();
 
-		/*An explicit sorting network to make 0 largest and 3 smallest count*/
-	
-		if (countA[0]<countA[2]){
-			swap(countA[0], countA[2]);
-			swap(sortA[0], sortA[2]);
-		}
-		if(countA[1]<countA[3]){
-			swap(countA[1], countA[3]);
-			swap(sortA[1], sortA[3]);
-		}
-		if(countA[2]<countA[3]){
-			swap(countA[2], countA[3]);
-			swap(sortA[2], sortA[3]);
-		}
-		if(countA[0]<countA[3]){
-			swap(countA[0], countA[3]);
-			swap(sortA[0], sortA[3]);
-		}
-		if(countA[1]<countA[2]){
-			swap(countA[1], countA[2]);
-			swap(sortA[1], sortA[2]);
-		}
-
-
-                if (countB[0]<countB[2]){
-                        swap(countB[0], countB[2]);
-                        swap(sortB[0], sortB[2]);
-                }
-                if(countB[1]<countB[3]){
-                        swap(countB[1], countB[3]);
-                        swap(sortB[1], sortB[3]);
-                }
-                if(countB[2]<countB[3]){
-                        swap(countB[2], countB[3]);
-                        swap(sortB[2], sortB[3]);
-                }
-                if(countB[0]<countB[3]){
-                        swap(countB[0], countB[3]);
-                        swap(sortB[0], sortB[3]);
-                }
-                if(countB[1]<countB[2]){
-                        swap(countB[1], countB[2]);
-                        swap(sortB[1], sortB[2]);
-                }
+			/*An explicit sorting network to make 0 largest and 3 smallest count*/
 		
-		/*end sort. Get DI-nucleotide counts sorted. */
-	
-                while(a!=aend && b!=bend){
-                        if ( ((*a)>>2) < ((*b)>>2)){
-                                count[sortA[((*a)&mask)]]+=1;
-                                a++;
-                        }
-                        else if ( ((*a)>>2)>((*b)>>2)){
-                                count[sortB[((*b)&mask)]+4]+=1;
-                                b++;
-                        }
-                        else {
-                                count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
-                                a++;
-                                b++;
-                        };
-                };
-                while (a!=aend){
-                        count[ sortA[((*a)&mask)]]+=1;
-                        a++;
-                };
-                while (b!=bend){
-                        count[ sortB[((*b)&mask)]+4]+=1;
-                        b++;
-                }
+			if (countA[0]<countA[2]){
+				swap(countA[0], countA[2]);
+				swap(sortA[0], sortA[2]);
+			}
+			if(countA[1]<countA[3]){
+				swap(countA[1], countA[3]);
+				swap(sortA[1], sortA[3]);
+			}
+			if(countA[2]<countA[3]){
+				swap(countA[2], countA[3]);
+				swap(sortA[2], sortA[3]);
+			}
+			if(countA[0]<countA[3]){
+				swap(countA[0], countA[3]);
+				swap(sortA[0], sortA[3]);
+			}
+			if(countA[1]<countA[2]){
+				swap(countA[1], countA[2]);
+				swap(sortA[1], sortA[2]);
+			}
 
-                char key[200];
-                All=sum(count);
-                if (All>MIN && All<MAX) matCounts.inc(count);
-                ++A;
-                ++B;
-                X++;
-        };
-	file[f].close();
+
+			if (countB[0]<countB[2]){
+				swap(countB[0], countB[2]);
+				swap(sortB[0], sortB[2]);
+			}
+			if(countB[1]<countB[3]){
+				swap(countB[1], countB[3]);
+				swap(sortB[1], sortB[3]);
+			}
+			if(countB[2]<countB[3]){
+				swap(countB[2], countB[3]);
+				swap(sortB[2], sortB[3]);
+			}
+			if(countB[0]<countB[3]){
+				swap(countB[0], countB[3]);
+				swap(sortB[0], sortB[3]);
+			}
+			if(countB[1]<countB[2]){
+				swap(countB[1], countB[2]);
+				swap(sortB[1], sortB[2]);
+			}
+			
+			/*end sort. Get DI-nucleotide counts sorted. */
+		
+			while(a!=aend && b!=bend){
+					if ( ((*a)>>2) < ((*b)>>2)){
+							count[sortA[((*a)&mask)]]+=1;
+							a++;
+					}
+					else if ( ((*a)>>2)>((*b)>>2)){
+							count[sortB[((*b)&mask)]+4]+=1;
+							b++;
+					}
+					else {
+							count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
+							a++;
+							b++;
+					};
+			};
+			while (a!=aend){
+					count[ sortA[((*a)&mask)]]+=1;
+					a++;
+			};
+			while (b!=bend){
+					count[ sortB[((*b)&mask)]+4]+=1;
+					b++;
+			}
+
+			char key[200];
+			All=sum(count);
+			if (All>MIN && All<MAX) matCounts.inc(count);
+			++A;
+			++B;
+			X++;
+			};
+		file[f].close();
 	};
 //        delete counts["0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"];
 //        counts.erase("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
@@ -471,38 +495,38 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
 	//returns an estimate of average read depth, ignoring coverage 0 sites.
 
-        matFile<unsigned int>::iterator A;
-        matFile<unsigned int>::iterator end;
-        unsigned int *a, *aend;
-        unsigned int count[24];
-        unsigned int mask=3;
-        int X=0;
-        long unsigned int Di=0, All=0;
+		matFile<unsigned int>::iterator A;
+		matFile<unsigned int>::iterator end;
+		unsigned int *a, *aend;
+		unsigned int count[24];
+		unsigned int mask=3;
+		int X=0;
+		long unsigned int Di=0, All=0;
 	
 	for (int f=0; f<LS; f++){
 		float depth=0, sites=0;
 		file[f].read();
-	        A=file[f].begin();
-	        end=file[f].end();
-	        while (A!=end){
+			A=file[f].begin();
+			end=file[f].end();
+			while (A!=end){
 			//cout << int(end.ptr_)-int(A.ptr_) << endl;
-	                memset(count, 0, sizeof(unsigned int)*24);
-	                a=A.inner_begin();
-	                aend=A.inner_end();
-	                while (a!=aend){
-	                        count[ ((*a)&mask)]+=1;
-	                        a++;
-	                };
-	                char key[200];
-	                All=(count[0]+count[1]+count[2]+count[3]);
-	                if (All>MIN && All<MAX) matCounts.inc(count);
-	                ++A;
-	                X++;
-	        };
+					memset(count, 0, sizeof(unsigned int)*24);
+					a=A.inner_begin();
+					aend=A.inner_end();
+					while (a!=aend){
+							count[ ((*a)&mask)]+=1;
+							a++;
+					};
+
+					All=(count[0]+count[1]+count[2]+count[3]);
+					if (All>MIN && All<MAX) matCounts.inc(count);
+					++A;
+					X++;
+			};
 		file[f].close();
 	}
-        //delete counts["0,0,0,0"];
-        //counts.erase("0,0,0,0");
+		//delete counts["0,0,0,0"];
+		//counts.erase("0,0,0,0");
 	return 30;
 };
 
@@ -583,23 +607,23 @@ matFile <unsigned int> *read (char *filename, int LS){
 			S0=samRecord.getReferenceID();
 			if (vector_allocated>100000000){
 				cout << "ding!\n";
-	                        for (int y=0; y<scaffolds.size(); y++){
-       	                 		myFile[y].read();
-                                	myFile[y].add_reads(very_large_array[y], scaffolds[y]);
-                                	myFile[y].write();
-                                	myFile[y].close();
-                        	}
+							for (int y=0; y<scaffolds.size(); y++){
+								myFile[y].read();
+									myFile[y].add_reads(very_large_array[y], scaffolds[y]);
+									myFile[y].write();
+									myFile[y].close();
+							}
 				vector_allocated=0;
-                        }
+						}
 
 			if (S0<slice_stop && S0>=slice_start) {
 				start0=samRecord.get0BasedPosition();
 				end0=samRecord.get0BasedAlignmentEnd();
 				if(SamFlag::isProperPair(samRecord.getFlag() ) ) {
 					//cout << "found mate pair\n";
-			        	samIn.ReadRecord(samHeader, next_samRecord);
+						samIn.ReadRecord(samHeader, next_samRecord);
 					S1=next_samRecord.getReferenceID();
-                			//if(not(next_samRecord.getCigarInfo()->hasIndel() ) ){
+							//if(not(next_samRecord.getCigarInfo()->hasIndel() ) ){
 					if (S1<slice_stop && S1>=slice_start) {
 						getCalls(next_samRecord, buffer, end1-start1);
 						start1=next_samRecord.get0BasedPosition();
@@ -690,7 +714,7 @@ void parse (float *datum, const char *read){
 		}
 		cptr++;
 	}
-        datum[x]=atoi(buffer);
+		datum[x]=atoi(buffer);
 };
 
 float fRand(){
@@ -761,22 +785,22 @@ int main (int argc, char**argv){
 	
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
-                memset(J[0], 0, sizeof(float)*2);
-                memset(J[1], 0, sizeof(float)*2);
-                memset(R, 0, sizeof(float)*2);
-                it=matCounts.begin();
-                end=matCounts.end();
-                while (it!=end ){
+				memset(J[0], 0, sizeof(float)*2);
+				memset(J[1], 0, sizeof(float)*2);
+				memset(R, 0, sizeof(float)*2);
+				it=matCounts.begin();
+				end=matCounts.end();
+				while (it!=end ){
 			X=*it;
 			C=X[24];
-                        J[0][0]+=J00(parms, X, coef)*C;
-                        J[0][1]+=J01(parms, X, coef)*C;
-                        J[1][0]+=J10(parms, X, coef)*C;
-                        J[1][1]+=J11(parms, X, coef)*C;
-                        R[0]+=(R0(parms, X, coef) )*C;
-                        R[1]+=(R1(parms, X, coef) )*C;
-                        ++it;
-                };
+						J[0][0]+=J00(parms, X, coef)*C;
+						J[0][1]+=J01(parms, X, coef)*C;
+						J[1][0]+=J10(parms, X, coef)*C;
+						J[1][1]+=J11(parms, X, coef)*C;
+						R[0]+=(R0(parms, X, coef) )*C;
+						R[1]+=(R1(parms, X, coef) )*C;
+						++it;
+				};
 
 		iJ[0][0]=1/(J[0][0]*J[1][1]-J[0][1]*J[1][0])*J[1][1];
 		iJ[0][1]=-1/(J[0][0]*J[1][1]-J[0][1]*J[1][0])*J[0][1];
@@ -790,7 +814,7 @@ int main (int argc, char**argv){
 		else parms[0]/=2.0;
 		if (parms[1]>R[1]) parms[1]-=R[1];
 		else parms[1]/=2.0;
-        };
+		};
 	cout << "Pi=" << parms[0] << ", Epsilon=" << parms[1]  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
 
 	D_0=parms[0];
@@ -804,27 +828,27 @@ int main (int argc, char**argv){
 		if ( D_1<1 && D_1>0 ) parms[2]=D_1;
 		else {parms[2]=parms[0]; D_0=parms[0];}
 
-                it=matCounts.begin();
-                end=matCounts.end();
+				it=matCounts.begin();
+				end=matCounts.end();
 		setcoef(coef, parms);
 
-                while (it!=end ){
+				while (it!=end ){
 			X=*it;
 			C=X[24];
-                	lnL_0+=F0(parms, X, coef)*C;
-                	++it;
-                };
-                lnL_1=0;
-                D_1=D_0/2;
-                parms[2]=D_1;
-                it=matCounts.begin();
+					lnL_0+=F0(parms, X, coef)*C;
+					++it;
+				};
+				lnL_1=0;
+				D_1=D_0/2;
+				parms[2]=D_1;
+				it=matCounts.begin();
 		setcoef(coef, parms);
-                while (it!=end ){
+				while (it!=end ){
 			X=*it;
 			C=X[24];
 			lnL_1+=F0(parms, X, coef)*C;
 			++it;
-                };
+				};
 		int inc=0;
 		while (fabs(D_0-D_1)>0.0000001 ){
 			if (inc>15){
