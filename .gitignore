@@ -15,4 +15,5 @@ test2.bam.bai
 transcript.sh
 true-align.sam
 true-test.txt
+*.o
 
