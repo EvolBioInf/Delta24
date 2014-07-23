@@ -29,11 +29,9 @@
 #include <time.h>
 
 using namespace std;
-int LS;
 
 int names_allocated=0;
 
-//TODO: This is a hash function to do very quick counting of the number of times a key occurs. It is currently a terrible very bad memory hog, and needs to be optimized to be less wasteful.
 class matHash{
 	private:
 	float **tree;
@@ -332,10 +330,8 @@ return (X[0]+X[1]+X[2]+X[3]+X[4]+X[5]+X[6]+X[7]+X[8]+X[9]+X[10]+X[11]+X[12]+X[13
 map <string, float *> counts;
 matHash matCounts;
 
-bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
-	/*this function totals up the number of occrance of A,C,G and T at site A and at site B, sorts them, and then makes the full 24 count
-	  it's return value indicates whether the simplified likelihood function can be used, which is the case whenever very few reads cover 
-	  both sites of interest. The threshold to trigger use of the simplified function should be set by the user.*/
+void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
+	/*this function totals up the number of occrance of A,C,G and T at site A and at site B, sorts them, and then makes the full 24 count*/
 
         matFile<unsigned int>::iterator A;	//A pointer to site A.
         matFile<unsigned int>::iterator B;	//A pointer to site B.
@@ -345,8 +341,6 @@ bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 
 	int X=0;				//An int to keep track of the number of sites read for debuging purposes. 
         long unsigned int All=0;		//An int to store the number of reads covering a site. Probably won't show up in a final version.
-
-	float ONE=0, TWO=0;
 
         unsigned int count[24], countA[4]={0,0,0,0}, countB[4]={0,0,0,0}, sortA[4]={0,1,2,3}, sortB[4]={0,1,2,3};
 	for (int f=0; f<LS; f++){
@@ -371,8 +365,6 @@ bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 	                b=B.inner_begin();
 	                aend=A.inner_end();
 	                bend=B.inner_end();
-
-		/*find out what nucleotides are most common at sites A and B and set these nucleotides to count[0]*/
 
                 while(a!=aend && b!=bend){
                         countA[((*a)&mask)]+=1;
@@ -442,20 +434,16 @@ bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
                         if ( ((*a)>>2) < ((*b)>>2)){
                                 count[sortA[((*a)&mask)]]+=1;
                                 a++;
-				TWO++; //These are the counts that will decide whether or not to use the simplified equation.
                         }
-			else{
-				ONE++; //<-
-                        	if ( ((*a)>>2)>((*b)>>2)){
-	                                count[sortB[((*b)&mask)]+4]+=1;
-       	                        	b++;
-                        	}
-                        	else {
-                                	count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
-                               		a++;
-                                	b++;
-                        	};
-			};
+                        else if ( ((*a)>>2)>((*b)>>2)){
+                                count[sortB[((*b)&mask)]+4]+=1;
+                                b++;
+                        }
+                        else {
+                                count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
+                                a++;
+                                b++;
+                        };
                 };
                 while (a!=aend){
                         count[ sortA[((*a)&mask)]]+=1;
@@ -466,6 +454,7 @@ bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
                         b++;
                 }
 
+                char key[200];
                 All=sum(count);
                 if (All>MIN && All<MAX) matCounts.inc(count);
                 ++A;
@@ -476,8 +465,6 @@ bool make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 	};
 //        delete counts["0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"];
 //        counts.erase("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
-	if ( ONE/(TWO+ONE) >0.99) return true;
-	else return false; 
 };
 
 
@@ -506,6 +493,7 @@ float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, u
 	                        count[ ((*a)&mask)]+=1;
 	                        a++;
 	                };
+	                char key[200];
 	                All=(count[0]+count[1]+count[2]+count[3]);
 	                if (All>MIN && All<MAX) matCounts.inc(count);
 	                ++A;
@@ -519,7 +507,7 @@ float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, u
 };
 
 
-matFile <unsigned int> *read (char *filename){
+matFile <unsigned int> *read (char *filename, int LS){
 	//This is the basic function to set up an array of matFiles from a bam file. The argument LS determines the number of scaffolds to be used from the bam file.
 
 	//Junk to set up and read the bam file.
@@ -534,11 +522,9 @@ matFile <unsigned int> *read (char *filename){
 	if(!samIn.OpenForRead(filename))
 	{ 
 		std::cout << "Failure to open " << filename << std::endl; 
-		return NULL;
 	}
 	if(!samIn.ReadHeader(samHeader)){
 		std::cout << "Failure to read header on " << filename << std::endl; 
-		return NULL;
 	};
 
 	SamHeaderRecord *headerRecord;
@@ -554,8 +540,7 @@ matFile <unsigned int> *read (char *filename){
 
 	for (int x=0; x<LS; x++){
 		headerRecord=samHeader.getNextSQRecord();
-		if (headerRecord!=NULL) scaffolds.push_back(atoi(headerRecord->getTagValue("LN") ) );
-		else {LS=x; break;}
+		scaffolds.push_back(atoi(headerRecord->getTagValue("LN") ) );
 		//?
 	}
 	size_t slice_start=0, slice_stop=0;
@@ -737,19 +722,18 @@ int main (int argc, char**argv){
 
 	//options : Flat (i.e. no paired end info)
 	//
-	bool use_quart;
 
 	if(argc!=8){
 		printf("usage: %s <bam file> <number of scaffolds> <start distance> <stop distance> <increment> <min> <max>\n", argv[0]);
 		exit(0);
 	};
 
+	int LS=atoi(argv[2]); 
 	int start=atoi(argv[3]);
 	int stop=atoi(argv[4]);
 	int inc=atoi(argv[5]);
 	int min=atoi(argv[6]);
 	int max=atoi(argv[7]);
-	LS=atoi(argv[2]); 
 
 	printf("bam file:%s number of scaffolds:%d start distance:%d stop distance:%d increment:%d min:%d max:%d\n", argv[1], LS, start, stop, inc, min, max);
 
@@ -761,8 +745,7 @@ int main (int argc, char**argv){
 	float coef[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	float lnL=0, iJ[2][2], J[2][2], R[2];
 
-	matFile <unsigned int> *data=read(argv[1]);
-	if (data==NULL) return 1;
+	matFile <unsigned int> *data=read(argv[1], LS);
 	list <float*>::iterator it, end;
 
 	float *X, C;
@@ -815,8 +798,7 @@ int main (int argc, char**argv){
 
 	for (int D=start; D<stop; D+=inc){
 		matCounts.clear();
-		//make_sorted_count should return a bool that tells us whether or not we need to use the full likelihood equation or can use the simplified equation.
-		use_quart=make_sorted_count(D, data, LS, min, max);
+		make_sorted_count(D, data, LS, min, max);
 		
 		lnL_0=0;
 		if ( D_1<1 && D_1>0 ) parms[2]=D_1;
@@ -825,44 +807,23 @@ int main (int argc, char**argv){
                 it=matCounts.begin();
                 end=matCounts.end();
 		setcoef(coef, parms);
-		if (use_quart){
-      	        	while (it!=end ){
-				X=*it;
-				C=X[24];
-                		lnL_0+=F0(parms, X, coef)*C;		//The full likelyhood equation, we should add a switch to use a shorter equation for large distances.
-                							//I'll call this equation F0_quart. If you use F0_quart instead of F0, then this program should reproduce
-									//the results of mlRho (more or less). 
-       		         	++it;
-			}
-                }
-		else{
-                	while (it!=end ){
-				X=*it;
-				C=X[24];
-                		lnL_0+=F0_quart(parms, X, coef)*C;		//The full likelyhood equation, we should add a switch to use a shorter equation for large distances.
-				++it;
-			}
-		};
+
+                while (it!=end ){
+			X=*it;
+			C=X[24];
+                	lnL_0+=F0(parms, X, coef)*C;
+                	++it;
+                };
                 lnL_1=0;
                 D_1=D_0/2;
                 parms[2]=D_1;
                 it=matCounts.begin();
 		setcoef(coef, parms);
-		if (use_quart){
-      	        	while (it!=end ){
-				X=*it;
-				C=X[24];
-				lnL_1+=F0(parms, X, coef)*C;
-       		         	++it;
-			}
-                }
-		else{
-                	while (it!=end ){
-				X=*it;
-				C=X[24];
-				lnL_1+=F0_quart(parms, X, coef)*C;
-       		         	++it;
-			}
+                while (it!=end ){
+			X=*it;
+			C=X[24];
+			lnL_1+=F0(parms, X, coef)*C;
+			++it;
                 };
 		int inc=0;
 		while (fabs(D_0-D_1)>0.0000001 ){
@@ -879,22 +840,13 @@ int main (int argc, char**argv){
 			lnL_1=0;
 			it=matCounts.begin();
 			setcoef(coef, parms);
-			if (use_quart){
-	      	        	while (it!=end ){
-					X=*it;
-					C=X[24];
-					lnL_1+=F0(parms, X, coef)*C;
-       		         		++it;
-				}
-                	}
-			else{
-       	         		while (it!=end ){
-					X=*it;
-					C=X[24];
-					lnL_1+=F0_quart(parms, X, coef)*C;
-       			         	++it;
-				}
-	                };
+
+			while (it!=end ){
+				X=*it;
+				C=X[24];
+				lnL_1+=F0(parms, X, coef)*C;
+				++it;
+			};
 		}
 		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << parms[0] << ", Epsilon=" << parms[1] << endl;
 	};
