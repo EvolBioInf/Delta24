@@ -232,21 +232,6 @@ class matFile{
 };
 
 //reads a SamRecord into a character array. The buffer filled in this function is used by a switch/case statement in the function "read" to construct a matFile. 
-int getCalls(SamRecord &this_record, char *buffer, int size){
-
-	int get = 0;
-	if (size>200) size=200;
-	for (int x=0;x<size; x++){
-		get = this_record.getCigarInfo()->getQueryIndex(x);
-		if (get > 0){
-			buffer[x] = this_record.getSequence(get);
-		}
-		else {
-			buffer[x] = '*';
-		}
-	}
-	return 1;
-};
 
 vector<char>* getCalls( SamRecord &record, size_t size ){
 	std::vector<char> *v = new vector<char>(size);
@@ -497,7 +482,6 @@ matFile <unsigned int> *read (char *filename, int LS){
 	int ReadIndex=0;
 	int start0, end0, start1, end1;
 	int S0, S1;
-	char buffer[200];
 
 	matFile <unsigned int> *myFile;
 	myFile=new matFile <unsigned int> [LS];
@@ -574,29 +558,22 @@ matFile <unsigned int> *read (char *filename, int LS){
 					}
 					//}
 				};
-				getCalls(samRecord, buffer, end0-start0);
-				if (end0-start0<200){
-					for(int x=start0; x<end0; x++){
-							vector_allocated++;
-							switch (buffer[x-start0]){
-								case 'A':
-									very_large_array[S0][x].push_back((ReadIndex<<2));
-								break;
-								case 'C':
-									very_large_array[S0][x].push_back((ReadIndex<<2)+1);
-								break;
-								case 'G':
-									very_large_array[S0][x].push_back((ReadIndex<<2)+2);
-									break;
-								case 'T':
-									very_large_array[S0][x].push_back((ReadIndex<<2)+3);
-								break;
-								default:
-									break;
-							}
 
+				auto v = getCalls( samRecord, end0 - start0);
+
+				for( int x = 0; x < v->size(); x++){
+					vector_allocated++;
+					size_t offset = 0;
+					switch( (*v)[x]){
+						case 'A': offset = 0; break;
+						case 'C': offset = 1; break;
+						case 'G': offset = 2; break;
+						case 'T': offset = 3; break;
 					}
+					very_large_array[S0][x + start0].push_back( (ReadIndex << 2) + offset );
 				}
+
+				delete v;
 			}
 		}
 		//The slice is read, let's check to see if we should save the vectors (to free up some memory), then set up the matFiles...
