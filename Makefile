@@ -12,4 +12,6 @@ all: src
 test: src
 	cd test && sh testDeltaComp.sh
 
-clean: src
+.PHONY: clean
+clean:
+	cd src && $(MAKE) $@
