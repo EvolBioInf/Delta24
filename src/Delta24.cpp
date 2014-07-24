@@ -25,9 +25,6 @@
 #include <unistd.h>
 #include <sys/sysinfo.h> 
 
-//used to initialize random number generater. Probably won't exist in a final program.
-#include <time.h>
-
 #include "matHash.hpp"
 
 using namespace std;
@@ -397,7 +394,6 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 					b++;
 			}
 
-			char key[200];
 			All=sum(count);
 			if (All>MIN && All<MAX) matCounts.inc(count);
 			++A;
@@ -420,10 +416,9 @@ float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, u
 		unsigned int count[24];
 		unsigned int mask=3;
 		int X=0;
-		long unsigned int Di=0, All=0;
+		long unsigned int All=0;
 	
 	for (int f=0; f<LS; f++){
-		float depth=0, sites=0;
 		file[f].read();
 			A=file[f].begin();
 			end=file[f].end();
@@ -454,9 +449,7 @@ matFile <unsigned int> *read (char *filename, int LS){
 	//This is the basic function to set up an array of matFiles from a bam file. The argument LS determines the number of scaffolds to be used from the bam file.
 
 	//Junk to set up and read the bam file.
-	uint64_t start, stop;
 	BamIndex bamIndex;
-	SamStatus::Status returnStatus = SamStatus::SUCCESS;
 
 	SamFile samIn;
 	SamFileHeader samHeader;
@@ -474,12 +467,11 @@ matFile <unsigned int> *read (char *filename, int LS){
 
 	vector <int> scaffolds;
 	vector <int> test (1,10);
-	size_t usage=test.capacity()*sizeof(int) + sizeof(test);
 
 	//Checks the headers to figure out the length of each scaffold.
 
 	//AVALIBLE MEMORY
-	size_t tLS;
+	// size_t tLS;
 
 	for (int x=0; x<LS; x++){
 		headerRecord=samHeader.getNextSQRecord();
@@ -490,7 +482,7 @@ matFile <unsigned int> *read (char *filename, int LS){
 
 	int ReadIndex=0;
 	int start0, end0, start1, end1;
-	int S0, S1, N0, N1, M, Match, Tries;
+	int S0, S1;
 	char buffer[200];
 
 	matFile <unsigned int> *myFile;
@@ -636,13 +628,6 @@ void parse (float *datum, const char *read){
 		datum[x]=atoi(buffer);
 };
 
-float fRand(){
-	//Returns a random float between 0 and 1.
-	//I don't think I use this currently.
-	double f = (double)rand() / RAND_MAX;
-	return (float)(f);
-}
-
 void setcoef(float *coef, float *parms){
 	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
 	coef[1]=log(0.333333333333333*parms[1]*(-parms[1] + 1));
@@ -683,10 +668,10 @@ int main (int argc, char**argv){
 	cout << min << ", " << max << endl;
 
 
-	float H[2]={0,0}, D_0, D_1, lnL_0, lnL_1, T;
+	float D_0, D_1, lnL_0, lnL_1, T;
 	float parms[4]={0.01, 0.01, 0.0, 0.0};
 	float coef[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	float lnL=0, iJ[2][2], J[2][2], R[2];
+	float iJ[2][2], J[2][2], R[2];
 
 	matFile <unsigned int> *data=read(argv[1], LS);
 	maptype::iterator it, end;
