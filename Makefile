@@ -1,13 +1,15 @@
 SUBDIRS= src
 
-.PHONY:
-all: src/Delta24
+.PHONY: subdirs $(SUBDIRS)
 
-src/Delta24: src/Delta24.cpp
-	cd src && $(MAKE)
+subdirs: $(SUBDIRS)
 
-test: src/Delta24
+$(SUBDIRS):
+	$(MAKE) -C $@
+
+all: src
+
+test: src
 	cd test && sh testDeltaComp.sh
 
-clean:
-	cd src && $(MAKE) $@
+clean: src
