@@ -234,19 +234,29 @@ class matFile{
 //reads a SamRecord into a character array. The buffer filled in this function is used by a switch/case statement in the function "read" to construct a matFile. 
 int getCalls(SamRecord &this_record, char *buffer, int size){
 
-		int get=0;
+	int get = 0;
 	if (size>200) size=200;
-		for (int x=0;x<size; x++){
-				get=this_record.getCigarInfo()->getQueryIndex(x);
-		if (get>0){
-					buffer[x]=this_record.getSequence(get);
+	for (int x=0;x<size; x++){
+		get = this_record.getCigarInfo()->getQueryIndex(x);
+		if (get > 0){
+			buffer[x] = this_record.getSequence(get);
 		}
-		else{
-			buffer[x]='*';
+		else {
+			buffer[x] = '*';
 		}
-		}
-		return 1;
+	}
+	return 1;
 };
+
+vector<char>* getCalls( SamRecord &record, size_t size ){
+	std::vector<char> *v = new vector<char>(size);
+	int get = 0;
+	for( size_t i=0; i< size; i++){
+		get = record.getCigarInfo()->getQueryIndex(i);
+		(*v)[i] = (get > 0 ? record.getSequence(get) : '*');
+	}
+	return v;
+}
 
 //returns the sum of all the different reads at a specific site, and allows us to calculate read depth.
 float sum(float *X){
@@ -410,38 +420,42 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
 	//returns an estimate of average read depth, ignoring coverage 0 sites.
 
-		matFile<unsigned int>::iterator A;
-		matFile<unsigned int>::iterator end;
-		unsigned int *a, *aend;
-		unsigned int count[24];
-		unsigned int mask=3;
-		int X=0;
-		long unsigned int All=0;
-	
-	for (int f=0; f<LS; f++){
-		file[f].read();
-			A=file[f].begin();
-			end=file[f].end();
-			while (A!=end){
-			//cout << int(end.ptr_)-int(A.ptr_) << endl;
-					memset(count, 0, sizeof(unsigned int)*24);
-					a=A.inner_begin();
-					aend=A.inner_end();
-					while (a!=aend){
-							count[ ((*a)&mask)]+=1;
-							a++;
-					};
+	const unsigned int MASK = 0x3;
 
-					All=(count[0]+count[1]+count[2]+count[3]);
-					if (All>MIN && All<MAX) matCounts.inc(count);
-					++A;
-					X++;
+	matFile<unsigned int>::iterator A;
+	matFile<unsigned int>::iterator end;
+	unsigned int *a, *aend;
+	unsigned int count[24];
+	
+	//long unsigned int All=0;
+	
+	for (int f=0; f< LS; f++){
+		file[f].read();
+		A = file[f].begin();
+		end = file[f].end();
+
+		for (; A != end ; ++A){
+			//cout << int(end.ptr_)-int(A.ptr_) << endl;
+			memset(count, 0, sizeof(unsigned int)*24);
+
+			a = A.inner_begin();
+			aend = A.inner_end();
+			for(; a != aend; a++){
+				count[ (*a) & MASK ]++;
 			};
+
+			//All=(count[0]+count[1]+count[2]+count[3]);
+			//if ( All > MIN && All < MAX) {
+				matCounts.inc(count);
+			//}
+		};
+
 		file[f].close();
 	}
-		//delete counts["0,0,0,0"];
-		//counts.erase("0,0,0,0");
-	return 30;
+
+	//delete counts["0,0,0,0"];
+	//counts.erase("0,0,0,0");
+	return 30; // FIXME: Yet another magic number
 };
 
 
@@ -498,6 +512,8 @@ matFile <unsigned int> *read (char *filename, int LS){
 
 	unsigned long memory_cap=(info.freeram+info.bufferram-(long int)(1073741824)/info.mem_unit*2)/sizeof(unsigned int)*info.mem_unit;
 
+	cout << "memory_cap: " << memory_cap << endl;
+
 	while (slice_stop<LS){
 		size_t tLN=0;
 		slice_start=slice_stop;
@@ -536,30 +552,25 @@ matFile <unsigned int> *read (char *filename, int LS){
 					S1=next_samRecord.getReferenceID();
 							//if(not(next_samRecord.getCigarInfo()->hasIndel() ) ){
 					if (S1<slice_stop && S1>=slice_start) {
-						getCalls(next_samRecord, buffer, end1-start1);
-						start1=next_samRecord.get0BasedPosition();
-						end1=next_samRecord.get0BasedAlignmentEnd();
-						if (end1-start1<200){
-							for(int x=start1; x<end1; x++) {
-									vector_allocated++;
-									switch (buffer[x-start1]){
-										case 'A':
-											very_large_array[S1][x].push_back((ReadIndex<<2));
-										break;
-										case 'C':
-											very_large_array[S1][x].push_back((ReadIndex<<2)+1);
-										break;
-										case 'G':
-											very_large_array[S1][x].push_back((ReadIndex<<2)+2);
-										break;
-										case 'T':
-											very_large_array[S1][x].push_back((ReadIndex<<2)+3);
-										break;
-										default:
-											break;
-									};
+						auto v = getCalls(next_samRecord, end1-start1);
+						start1 = next_samRecord.get0BasedPosition();
+						end1 = next_samRecord.get0BasedAlignmentEnd();
+
+						int x = start1;
+						for( auto it: *v){
+							size_t offset = 0;
+							switch(it){
+								case 'A': offset = 0; break;
+								case 'C': offset = 1; break;
+								case 'G': offset = 2; break;
+								case 'T': offset = 3; break;
 							}
+
+							very_large_array[S1][x].push_back( (ReadIndex << 2) + offset );
+							x++;
 						}
+
+						delete v;
 					}
 					//}
 				};
@@ -691,22 +702,22 @@ int main (int argc, char**argv){
 	
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
-				memset(J[0], 0, sizeof(float)*2);
-				memset(J[1], 0, sizeof(float)*2);
-				memset(R, 0, sizeof(float)*2);
-				it=matCounts.begin();
-				end=matCounts.end();
-				while (it!=end ){
+		memset(J[0], 0, sizeof(float)*2);
+		memset(J[1], 0, sizeof(float)*2);
+		memset(R, 0, sizeof(float)*2);
+		it=matCounts.begin();
+		end=matCounts.end();
+		while (it!=end ){
 			X=it->second;
 			C=X[24];
-						J[0][0]+=J00(parms, X, coef)*C;
-						J[0][1]+=J01(parms, X, coef)*C;
-						J[1][0]+=J10(parms, X, coef)*C;
-						J[1][1]+=J11(parms, X, coef)*C;
-						R[0]+=(R0(parms, X, coef) )*C;
-						R[1]+=(R1(parms, X, coef) )*C;
-						++it;
-				};
+			J[0][0] += J00(parms, X, coef) * C;
+			J[0][1] += J01(parms, X, coef) * C;
+			J[1][0] += J10(parms, X, coef) * C;
+			J[1][1] += J11(parms, X, coef) * C;
+			R[0] += (R0(parms, X, coef) ) * C;
+			R[1] += (R1(parms, X, coef) ) * C;
+			++it;
+		};
 
 		iJ[0][0]=1/(J[0][0]*J[1][1]-J[0][1]*J[1][0])*J[1][1];
 		iJ[0][1]=-1/(J[0][0]*J[1][1]-J[0][1]*J[1][0])*J[0][1];
@@ -716,11 +727,19 @@ int main (int argc, char**argv){
 		R[0]=(R[0]*iJ[0][0]+R[1]*iJ[0][1]);
 		R[1]=(R[0]*iJ[1][0]+R[1]*iJ[1][1]);
 
-		if (parms[0]>R[0]) parms[0]-=R[0];
-		else parms[0]/=2.0;
-		if (parms[1]>R[1]) parms[1]-=R[1];
-		else parms[1]/=2.0;
-		};
+		if( parms[0] > R[0]) {
+			parms[0]-= R[0];
+		} else {
+			parms[0]/= 2.0;
+		}
+
+		if( parms[1] > R[1]) {
+			parms[1]-= R[1];
+		} else {
+			parms[1]/= 2.0;
+		}
+	};
+
 	cout << "Pi=" << parms[0] << ", Epsilon=" << parms[1]  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
 
 	D_0=parms[0];
