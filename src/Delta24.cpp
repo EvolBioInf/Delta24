@@ -28,92 +28,11 @@
 //used to initialize random number generater. Probably won't exist in a final program.
 #include <time.h>
 
+#include "matHash.hpp"
+
 using namespace std;
 
 int names_allocated=0;
-
-class matHash{
-	private:
-	float **tree;
-	float *fptr;
-	list <float *> values;
-	list <float *> keys; // keys is never read!
-	bool alloc;
-	unsigned int MAX;
-
-	public:
-	matHash(){
-	};
-
-	void init(unsigned int _MAX){
-		MAX = _MAX;
-		tree= (float**) malloc(MAX * sizeof(float **));
-		for(size_t i=0; i<MAX; i++){
-			tree[i] = NULL;
-		}
-	};
-
-	void inc(unsigned int *key){
-		float **tree_ptr = tree;
-		unsigned int *key_ptr = key;
-
-		bool alloc = false;
-		for (int x=0; x< 24; x++){
-			if((*key_ptr) >= MAX){
-				cout << "Whoops, you lied to me!\n";
-			}
-
-			if( tree_ptr[*key_ptr] == NULL){
-				tree_ptr+=*key_ptr;
-				*tree_ptr=(float *) calloc (MAX, sizeof(float **)); //This is probably a horible way to do this...
-				keys.push_back( (*tree_ptr) );
-				tree_ptr=(float **)(*tree_ptr);
-				alloc=true;
-			}
-			else {
-				tree_ptr=(float **)(tree_ptr[*key_ptr]);
-			}
-			key_ptr++;
-		}
-		if (alloc){
-			float *fptr = new float[25];
-			values.push_back(fptr);
-			*tree_ptr = fptr;
-			key_ptr = key;
-
-			for (int x=0; x<24; x++){
-				fptr[x] = float(key_ptr[x]);
-			}
-
-			fptr[24] = 1.0;
-		}
-		else{
-			(*tree_ptr)[24]++;
-		};
-	}
-
-	void clear(void){
-		cout << "Clearing\n";
-
-		for( auto it: values){
-			free(it);
-		}
-		values.clear();
-
-		for( auto it: keys){
-			free(it);
-		}
-		keys.clear();
-		cout << "Done\n";
-
-		for( size_t i=0; i< MAX; i++){
-			tree[i] = NULL;
-		}
-	};
-
-	list <float *>::iterator begin() { return values.begin(); }
-	list <float *>::iterator end() { return values.end(); }	
-};
 
 template <class Type>
 class matFile{
@@ -770,7 +689,7 @@ int main (int argc, char**argv){
 	float lnL=0, iJ[2][2], J[2][2], R[2];
 
 	matFile <unsigned int> *data=read(argv[1], LS);
-	list <float*>::iterator it, end;
+	maptype::iterator it, end;
 
 	float *X, C;
 
@@ -779,6 +698,8 @@ int main (int argc, char**argv){
 
 	R[0]=100;
 	R[1]=100;
+
+	matCounts = matHash();
 
 	matCounts.init(max);
 	parms[3]=make_four_count(data, LS, min, max);
@@ -791,7 +712,7 @@ int main (int argc, char**argv){
 				it=matCounts.begin();
 				end=matCounts.end();
 				while (it!=end ){
-			X=*it;
+			X=it->second;
 			C=X[24];
 						J[0][0]+=J00(parms, X, coef)*C;
 						J[0][1]+=J01(parms, X, coef)*C;
@@ -833,7 +754,7 @@ int main (int argc, char**argv){
 		setcoef(coef, parms);
 
 				while (it!=end ){
-			X=*it;
+			X=it->second;
 			C=X[24];
 					lnL_0+=F0(parms, X, coef)*C;
 					++it;
@@ -844,7 +765,7 @@ int main (int argc, char**argv){
 				it=matCounts.begin();
 		setcoef(coef, parms);
 				while (it!=end ){
-			X=*it;
+			X=it->second;
 			C=X[24];
 			lnL_1+=F0(parms, X, coef)*C;
 			++it;
@@ -866,7 +787,7 @@ int main (int argc, char**argv){
 			setcoef(coef, parms);
 
 			while (it!=end ){
-				X=*it;
+				X=it->second;
 				C=X[24];
 				lnL_1+=F0(parms, X, coef)*C;
 				++it;

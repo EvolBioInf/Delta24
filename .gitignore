@@ -2,6 +2,7 @@ Delta24
 *.fasta
 *seed*
 callgrind*
+massif*
 profileDb.con
 profileDb.pos
 profileDb.sum
