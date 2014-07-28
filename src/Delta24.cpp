@@ -85,8 +85,7 @@ class matFile{
 		tempfile.read((char*)&allocated, sizeof(unsigned int));
 		if (block!=NULL) delete block;
 		block=NULL;
-		try {block=new Type [allocated];}
-		catch (std::bad_alloc& ba){std::cerr << "insufficent memory to read in buffer : " << ba.what() << '\n';}
+		block=new Type [allocated];
 		ptr=block;
 		end_=block+allocated-1;
 		tempfile.read((char*)block, sizeof(Type)*allocated);
@@ -112,17 +111,17 @@ class matFile{
 		
 		*/
 		unsigned int total_size=0; 						//
-				for (int x=0; x<size_; x++) total_size+=a[x].size();			//
+		for (int x=0; x<size_; x++) total_size+=a[x].size();			//
 		sites=size_;
 		allocated=sites+total_size;					//
-		try {block=new Type [allocated];}
-		catch (std::bad_alloc& ba){std::cerr << "insufficent memory to read in buffer : " << ba.what() << '\n';}
-				Type *site=block;							//
-				for (int x=0; x<sites; x++){						//
-					*site=a[x].size();
-						site++;
-					for (int y=0; y<a[x].size(); y++){ *site=a[x][y]; site++; };
-				};
+		block=new Type [allocated];
+
+		Type *site=block;							//
+		for (int x=0; x<sites; x++){						//
+			*site=a[x].size();
+			site++;
+			for (int y=0; y<a[x].size(); y++){ *site=a[x][y]; site++; }
+		};
 		end_=site;								//
 	};
 	void add_reads(vector <Type> *a, unsigned int new_sites){
@@ -137,9 +136,8 @@ class matFile{
 
 		Type *new_block;
 		unsigned long MB=1048576;
-		try {new_block=new Type [total_size+new_sites-sites];}
-		catch (std::bad_alloc& ba){std::cerr << "insufficent memory to create file " << tempname << ". Requested " << (total_size+new_sites)*sizeof(Type)/MB << " MB.\n";}
-		allocated=total_size+(new_sites-sites);
+		new_block = new Type [total_size+new_sites-sites];
+		allocated = total_size+(new_sites-sites);
 
 		//TODO I should check to make sure this alocation worked.
 
@@ -161,12 +159,12 @@ class matFile{
 			a[x].clear();
 		};
 
-				for (int x=sites; x<new_sites; x++){
-						*new_site=a[x].size();
-						new_site++;
-						for (int y=0; y<a[x].size(); y++){ *new_site=a[x][y]; new_site++;}
+		for (int x=sites; x<new_sites; x++){
+			*new_site=a[x].size();
+			new_site++;
+			for (int y=0; y<a[x].size(); y++){ *new_site=a[x][y]; new_site++;}
 			a[x].clear();
-				};
+		};
 		
 		// Look, I even delete the old block so we don't have a memory leak! Wow, what skill! 
 		if  (block!=NULL) delete block;
@@ -302,18 +300,18 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 			bend=B.inner_end();
 
 			while(a!=aend && b!=bend){
-					countA[((*a)&mask)]+=1;
-					a++;
-					countB[((*b)&mask)]+=1;
-					b++;
+				countA[((*a)&mask)]+=1;
+				a++;
+				countB[((*b)&mask)]+=1;
+				b++;
 			};
 			while (a!=aend){
-					countA[ ((*a)&mask)]+=1;
-					a++;
+				countA[ ((*a)&mask)]+=1;
+				a++;
 			};
 			while (b!=bend){
-					countB[ ((*b)&mask)]+=1;
-					b++;
+				countB[ ((*b)&mask)]+=1;
+				b++;
 			}
 			a=A.inner_begin();
 			b=B.inner_begin();
@@ -366,27 +364,27 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 			/*end sort. Get DI-nucleotide counts sorted. */
 		
 			while(a!=aend && b!=bend){
-					if ( ((*a)>>2) < ((*b)>>2)){
-							count[sortA[((*a)&mask)]]+=1;
-							a++;
-					}
-					else if ( ((*a)>>2)>((*b)>>2)){
-							count[sortB[((*b)&mask)]+4]+=1;
-							b++;
-					}
-					else {
-							count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
-							a++;
-							b++;
-					};
+				if ( ((*a)>>2) < ((*b)>>2)){
+					count[sortA[((*a)&mask)]]+=1;
+					a++;
+				}
+				else if ( ((*a)>>2)>((*b)>>2)){
+					count[sortB[((*b)&mask)]+4]+=1;
+					b++;
+				}
+				else {
+					count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
+					a++;
+					b++;
+				};
 			};
 			while (a!=aend){
-					count[ sortA[((*a)&mask)]]+=1;
-					a++;
+				count[ sortA[((*a)&mask)]]+=1;
+				a++;
 			};
 			while (b!=bend){
-					count[ sortB[((*b)&mask)]+4]+=1;
-					b++;
+				count[ sortB[((*b)&mask)]+4]+=1;
+				b++;
 			}
 
 			All=sum(count);
@@ -394,11 +392,10 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 			++A;
 			++B;
 			X++;
-			};
+		}
+
 		file[f].close();
 	};
-//        delete counts["0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"];
-//        counts.erase("0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
 };
 
 
@@ -516,25 +513,16 @@ matFile <unsigned int> *read (char *filename, int LS){
 		while(samIn.ReadRecord(samHeader, samRecord) ){
 			ReadIndex+=1;
 			S0=samRecord.getReferenceID();
-			if (vector_allocated>100000000){
-				cout << "ding!\n";
-							for (int y=0; y<scaffolds.size(); y++){
-								myFile[y].read();
-									myFile[y].add_reads(very_large_array[y], scaffolds[y]);
-									myFile[y].write();
-									myFile[y].close();
-							}
-				vector_allocated=0;
-						}
 
 			if (S0<slice_stop && S0>=slice_start) {
 				start0=samRecord.get0BasedPosition();
 				end0=samRecord.get0BasedAlignmentEnd();
+
 				if(SamFlag::isProperPair(samRecord.getFlag() ) ) {
-					//cout << "found mate pair\n";
-						samIn.ReadRecord(samHeader, next_samRecord);
+
+					samIn.ReadRecord(samHeader, next_samRecord);
 					S1=next_samRecord.getReferenceID();
-							//if(not(next_samRecord.getCigarInfo()->hasIndel() ) ){
+
 					if (S1<slice_stop && S1>=slice_start) {
 						auto v = getCalls(next_samRecord, end1-start1);
 						start1 = next_samRecord.get0BasedPosition();
@@ -556,7 +544,7 @@ matFile <unsigned int> *read (char *filename, int LS){
 
 						delete v;
 					}
-					//}
+
 				};
 
 				auto v = getCalls( samRecord, end0 - start0);
