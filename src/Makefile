@@ -2,7 +2,7 @@ STATGENDIR= ../lib/libStatGen
 LDLIBS= -lStatGen -lz
 LDFLAGS= -L $(STATGENDIR)
 
-CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall $(LDLIBS) $(LDFLAGS) -O3
+CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -O3
 
 Delta24: Delta24.o matHash.o
 	$(CXX) $^ $(CXXFLAGS) -o Delta24
