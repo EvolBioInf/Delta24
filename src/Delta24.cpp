@@ -26,6 +26,7 @@
 #include <sys/sysinfo.h> 
 
 #include "matHash.hpp"
+#include "bam24.hpp"
 
 using namespace std;
 
@@ -234,23 +235,15 @@ vector<char>* getCalls( SamRecord &record, size_t size ){
 	int get = 0;
 	for( size_t i=0; i< size; i++){
 		get = record.getCigarInfo()->getQueryIndex(i);
-		(*v)[i] = (get > 0 ? record.getSequence(get) : '*');
+		(*v)[i] = (get > 0 ? record.getSequence(i) : '*');
 	}
 	return v;
 }
 
 //returns the sum of all the different reads at a specific site, and allows us to calculate read depth.
-float sum(float *X){
-	float ret = 0.0;
-	for( size_t i= 0; i< 24; i++ ){
-		ret += X[i];
-	}
-	return ret;
-}
-
-//let's overload it a bit.
-unsigned int sum(unsigned int *X){
-	auto ret = 0;
+template< typename T>
+T sum (T* X){
+	T ret = (T)0;
 	for( size_t i= 0; i< 24; i++ ){
 		ret += X[i];
 	}
@@ -260,6 +253,16 @@ unsigned int sum(unsigned int *X){
 //A global. Can easily just be moved into main()
 map <string, float *> counts;
 matHash matCounts;
+
+int uint_cmp(const void *a, const void *b){
+	const unsigned int *ia = (const unsigned int *)a;
+	const unsigned int *ib = (const unsigned int *)b;
+	return *ia - *ib;
+}
+
+int uint_cmp_desc(const void *a, const void *b){
+	return - uint_cmp(a,b);
+}
 
 void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
 	/*this function totals up the number of occrance of A,C,G and T at site A and at site B, sorts them, and then makes the full 24 count*/
@@ -297,19 +300,12 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 			aend=A.inner_end();
 			bend=B.inner_end();
 
-			while(a!=aend && b!=bend){
-				countA[((*a)&mask)]+=1;
-				a++;
-				countB[((*b)&mask)]+=1;
-				b++;
-			};
-			while (a!=aend){
-				countA[ ((*a)&mask)]+=1;
-				a++;
-			};
-			while (b!=bend){
-				countB[ ((*b)&mask)]+=1;
-				b++;
+
+			for (; a!=aend; a++){
+				countA[ ((*a)&mask)] += 1;
+			}
+			for (; b!=bend; b++){
+				countB[ ((*b)&mask)] += 1;
 			}
 			a=A.inner_begin();
 			b=B.inner_begin();
@@ -363,25 +359,25 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 		
 			while(a!=aend && b!=bend){
 				if ( ((*a)>>2) < ((*b)>>2)){
-					count[sortA[((*a)&mask)]]+=1;
+					count[sortA[((*a)&mask)]] += 1;
 					a++;
 				}
 				else if ( ((*a)>>2)>((*b)>>2)){
-					count[sortB[((*b)&mask)]+4]+=1;
+					count[sortB[((*b)&mask)]+4] += 1;
 					b++;
 				}
 				else {
-					count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4]+=1;
+					count[8+sortB[((*b)&mask)]+sortA[((*a)&mask)]*4] += 1;
 					a++;
 					b++;
-				};
-			};
+				}
+			}
 			while (a!=aend){
-				count[ sortA[((*a)&mask)]]+=1;
+				count[ sortA[((*a)&mask)]] += 1;
 				a++;
-			};
+			}
 			while (b!=bend){
-				count[ sortB[((*b)&mask)]+4]+=1;
+				count[ sortB[((*b)&mask)]+4] += 1;
 				b++;
 			}
 
@@ -393,8 +389,35 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 		}
 
 		file[f].close();
-	};
-};
+	}
+}
+
+float make_four_count (vector<vector<entry>*>* map){
+	unsigned int count[24];
+	for (auto i = map->begin(); i != map->end(); ++i){
+		memset(count, 0, sizeof(unsigned int)*24);
+
+		if( !*i) {
+			matCounts.inc(count);
+			continue;
+		}
+
+		for( auto j = (*i)->begin(); j != (*i)->end(); j++){
+			size_t offset = 0;
+			switch( j->second){
+				case 'A': offset = 0; break;
+				case 'C': offset = 1; break;
+				case 'G': offset = 2; break;
+				case 'T': offset = 3; break;
+			}
+			count[ offset ]++;
+		}
+
+		matCounts.inc(count);
+	}
+
+	return 30.0;
+}
 
 
 float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
@@ -438,6 +461,17 @@ float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, u
 	return 30; // FIXME: Yet another magic number
 };
 
+void
+printCount( matHash matCounts ){
+	ofstream derp("matCounts.tmp", ios::out);
+	for( auto it : matCounts){
+		for( size_t i = 0; i<25; i++){
+			derp << it.second[i] << " ";
+		}
+		derp << endl;
+	}
+	derp.close();
+}
 
 matFile <unsigned int> *read (char *filename, int LS){
 	//This is the basic function to set up an array of matFiles from a bam file. The argument LS determines the number of scaffolds to be used from the bam file.
@@ -515,9 +549,11 @@ matFile <unsigned int> *read (char *filename, int LS){
 			if (S0<slice_stop && S0>=slice_start) {
 				start0=samRecord.get0BasedPosition();
 				end0=samRecord.get0BasedAlignmentEnd();
+				int length = samRecord.getReadLength();
 
+				/*
 				if(SamFlag::isProperPair(samRecord.getFlag() ) ) {
-
+					cout << "NUNUNU" << endl;
 					samIn.ReadRecord(samHeader, next_samRecord);
 					S1=next_samRecord.getReferenceID();
 
@@ -542,10 +578,9 @@ matFile <unsigned int> *read (char *filename, int LS){
 
 						delete v;
 					}
+				} */
 
-				};
-
-				auto v = getCalls( samRecord, end0 - start0);
+				auto v = getCalls( samRecord, length);
 
 				for( int x = 0; x < v->size(); x++){
 					vector_allocated++;
@@ -577,6 +612,62 @@ matFile <unsigned int> *read (char *filename, int LS){
 	};
 	return myFile;
 };
+
+void printPosNew(vector<vector<entry>*>* V){
+	ofstream derp("posNew.tmp", ios::out);
+
+	for( auto i = V->begin(); i != V->end(); i++){
+		if( !*i){
+			derp << endl;
+			continue;
+		}
+
+		for( auto j = (*i)->begin(); j != (*i)->end(); j++){
+			derp << j->second << ":" << j->first+1 << "\t";
+		}
+		derp << endl;
+	}
+	
+	derp.close();
+}
+
+void printPosOld( matFile <unsigned int> *file){
+	ofstream derp("posOld.tmp", ios::out);
+
+	matFile<unsigned int>::iterator A;
+	matFile<unsigned int>::iterator end;
+	unsigned int *a, *aend;
+	
+	
+	int f = 0;
+	file[f].read();
+	A = file[f].begin();
+	end = file[f].end();
+
+	for (; A != end ; ++A){
+		a = A.inner_begin();
+		aend = A.inner_end();
+
+		while( a != aend){
+			char c;
+			switch(*a & 0x3){
+				case 0: c = 'A'; break;
+				case 1: c = 'C'; break;
+				case 2: c = 'G'; break;
+				case 3: c = 'T'; break;
+			}
+			derp << c << ":" << (*a>>2) << "\t";
+			a++;
+		}
+
+		derp << endl;
+	}
+
+	file[f].close();
+	
+
+	derp.close();
+}
 
 void setcoef(float *coef, float *parms){
 	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
@@ -637,7 +728,16 @@ int main (int argc, char**argv){
 	matCounts = matHash();
 
 	matCounts.init(max);
-	parms[3]=make_four_count(data, LS, min, max);
+
+	/*printPosNew( bam24(argv[1]));
+	make_four_count( bam24(argv[1]) );
+*/
+	parms[3] = 30.0;
+
+	printPosOld( data);
+	parms[3] = make_four_count(data, LS, min, max);
+
+	//printCount(matCounts);
 	
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
@@ -656,7 +756,7 @@ int main (int argc, char**argv){
 			R[0] += (R0(parms, X, coef) ) * C;
 			R[1] += (R1(parms, X, coef) ) * C;
 			++it;
-		};
+		}
 
 		auto detJ = J[0][0] * J[1][1] - J[0][1] * J[1][0];
 
@@ -679,7 +779,7 @@ int main (int argc, char**argv){
 		} else {
 			parms[1]/= 2.0;
 		}
-	};
+	}
 
 	cout << "Pi=" << parms[0] << ", Epsilon=" << parms[1]  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
 
