@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <cstring>
 #include <iostream>
@@ -31,6 +32,19 @@
 using namespace std;
 
 int names_allocated=0;
+
+typedef unsigned int count_t;
+
+inline static count_t char2uint( const char c){
+	count_t ret = 0;
+	switch( c){
+		case 'A': ret = 0; break;
+		case 'C': ret = 1; break;
+		case 'G': ret = 2; break;
+		case 'T': ret = 3; break;
+	}
+	return ret;
+}
 
 template <class Type>
 class matFile{
@@ -251,7 +265,6 @@ T sum (T* X){
 }
 
 //A global. Can easily just be moved into main()
-map <string, float *> counts;
 matHash matCounts;
 
 int uint_cmp(const void *a, const void *b){
@@ -262,6 +275,80 @@ int uint_cmp(const void *a, const void *b){
 
 int uint_cmp_desc(const void *a, const void *b){
 	return - uint_cmp(a,b);
+}
+
+matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection){
+	matHash *matCounts = new matHash();
+
+	size_t length = projection->size();
+	for (size_t i = 0; i < length - distance; ++i){
+		size_t j = i + distance;
+
+		if( (*projection)[i] == NULL || (*projection)[j] == NULL){
+			continue;
+		}
+
+		count_t count[24] = {0};
+		count_t countA[4] = {0}, countB[4] = {0};
+
+		array<count_t, 4> sortA, sortB;
+
+		for( size_t k=0; k<4; k++){
+			sortA[k] = sortB[k] = k;
+		}
+
+		// FIXME: The following line is fugly. Fix that type!
+		for( auto& it: *((*projection)[i]) ){
+			countA[char2uint(it.second)]++;
+		}
+
+		for( auto& it: *((*projection)[j]) ){
+			countB[char2uint(it.second)]++;
+		}
+
+		auto cmpA = [&countA]( count_t a, count_t b){
+			return countA[a] > countA[b];
+		};
+		sort( sortA.begin(), sortA.end(), cmpA);
+		sort( sortB.begin(), sortB.end(), [&countB](count_t a, count_t b){
+			return countB[a] > countB[b];
+		});
+
+		assert(countA[sortA[1]] >= countA[sortA[2]]);
+
+		auto ii = ((*projection)[i])->begin();
+		auto ie = ((*projection)[i])->end();
+
+		auto ji = ((*projection)[j])->begin();
+		auto je = ((*projection)[j])->end();
+
+		while( ii != ie && ji != je ){
+			if( ii->first < ji->first ){
+				count[sortA[ char2uint(ii->second) ] ]++;
+				ii++;
+			} else if ( ii->first > ji->first ){
+				count[sortB[ char2uint(ji->second)] + 4]++;
+				ji++;
+			} else {
+				size_t offset = sortB[char2uint(ji->second)] + sortA[char2uint(ii->second)] * 4;
+				count[8 + offset]++;
+				ii++;
+				ji++;
+			}
+		}
+
+		for(; ii != ie; ii++){
+			count[ sortA[char2uint(ii->second)]]++;
+		}
+
+		for(; ji != je; ji++){
+			count[ sortB[char2uint(ji->second)] + 4]++;
+		}
+
+		matCounts->inc(count);
+	}
+
+	return matCounts;
 }
 
 void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
@@ -307,56 +394,56 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 			for (; b!=bend; b++){
 				countB[ ((*b)&mask)] += 1;
 			}
-			a=A.inner_begin();
-			b=B.inner_begin();
+
 
 			/*An explicit sorting network to make 0 largest and 3 smallest count*/
-		
-			if (countA[0]<countA[2]){
-				swap(countA[0], countA[2]);
-				swap(sortA[0], sortA[2]);
-			}
-			if(countA[1]<countA[3]){
-				swap(countA[1], countA[3]);
-				swap(sortA[1], sortA[3]);
-			}
-			if(countA[2]<countA[3]){
-				swap(countA[2], countA[3]);
-				swap(sortA[2], sortA[3]);
-			}
-			if(countA[0]<countA[3]){
-				swap(countA[0], countA[3]);
-				swap(sortA[0], sortA[3]);
-			}
-			if(countA[1]<countA[2]){
-				swap(countA[1], countA[2]);
-				swap(sortA[1], sortA[2]);
-			}
+			{
+				if (countA[0]<countA[2]){
+					swap(countA[0], countA[2]);
+					swap(sortA[0], sortA[2]);
+				}
+				if(countA[1]<countA[3]){
+					swap(countA[1], countA[3]);
+					swap(sortA[1], sortA[3]);
+				}
+				if(countA[2]<countA[3]){
+					swap(countA[2], countA[3]);
+					swap(sortA[2], sortA[3]);
+				}
+				if(countA[0]<countA[3]){
+					swap(countA[0], countA[3]);
+					swap(sortA[0], sortA[3]);
+				}
+				if(countA[1]<countA[2]){
+					swap(countA[1], countA[2]);
+					swap(sortA[1], sortA[2]);
+				}
 
 
-			if (countB[0]<countB[2]){
-				swap(countB[0], countB[2]);
-				swap(sortB[0], sortB[2]);
+				if (countB[0]<countB[2]){
+					swap(countB[0], countB[2]);
+					swap(sortB[0], sortB[2]);
+				}
+				if(countB[1]<countB[3]){
+					swap(countB[1], countB[3]);
+					swap(sortB[1], sortB[3]);
+				}
+				if(countB[2]<countB[3]){
+					swap(countB[2], countB[3]);
+					swap(sortB[2], sortB[3]);
+				}
+				if(countB[0]<countB[3]){
+					swap(countB[0], countB[3]);
+					swap(sortB[0], sortB[3]);
+				}
+				if(countB[1]<countB[2]){
+					swap(countB[1], countB[2]);
+					swap(sortB[1], sortB[2]);
+				}
 			}
-			if(countB[1]<countB[3]){
-				swap(countB[1], countB[3]);
-				swap(sortB[1], sortB[3]);
-			}
-			if(countB[2]<countB[3]){
-				swap(countB[2], countB[3]);
-				swap(sortB[2], sortB[3]);
-			}
-			if(countB[0]<countB[3]){
-				swap(countB[0], countB[3]);
-				swap(sortB[0], sortB[3]);
-			}
-			if(countB[1]<countB[2]){
-				swap(countB[1], countB[2]);
-				swap(sortB[1], sortB[2]);
-			}
-			
 			/*end sort. Get DI-nucleotide counts sorted. */
-		
+			a=A.inner_begin();
+			b=B.inner_begin();
 			while(a!=aend && b!=bend){
 				if ( ((*a)>>2) < ((*b)>>2)){
 					count[sortA[((*a)&mask)]] += 1;
@@ -577,6 +664,18 @@ void setcoef(float *coef, float *parms){
 	coef[14]=(-pow(parms[0],2)+parms[0]);
 };
 
+void
+printCount( matHash matCounts ){
+	ofstream derp("matCounts.tmp", ios::out);
+		for( auto it : matCounts){
+			for( size_t i = 0; i<25; i++){
+				derp << it.second[i] << " ";
+			}
+			derp << endl;
+		}
+	derp.close();
+}
+
 int main (int argc, char**argv){
 
 	//options : Flat (i.e. no paired end info)
@@ -617,7 +716,9 @@ int main (int argc, char**argv){
 
 	matCounts = matHash();
 
-	make_four_count( matCounts, bam24(argv[1]) );
+	auto foobar = bam24(argv[1]);
+
+	make_four_count( matCounts, foobar );
 
 	parms[3] = 30.0;
 	
@@ -667,9 +768,11 @@ int main (int argc, char**argv){
 	D_1 = parms[0];
 
 	for (int D = start; D < stop; D += inc){
-		matCounts.clear();
-		make_sorted_count(D, data, LS, min, max);
-		
+		//matCounts.clear();
+		//make_sorted_count(D, data, LS, min, max);
+		auto matCounts = *make_sorted_count ( D, foobar);
+		printCount(matCounts);
+
 		lnL_0 = 0;
 
 		if ( D_1 < 1 && D_1 > 0 ) {
@@ -721,5 +824,6 @@ int main (int argc, char**argv){
 		}
 
 		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << parms[0] << ", Epsilon=" << parms[1] << endl;
+		matCounts.clear();
 	}
 }
