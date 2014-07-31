@@ -392,7 +392,7 @@ void make_sorted_count (int dist, matFile <unsigned int> *file, int LS, unsigned
 	}
 }
 
-float make_four_count (vector<vector<entry>*>* map){
+float make_four_count ( matHash matCounts, vector<vector<entry>*>* map){
 	unsigned int count[24];
 	for (auto i = map->begin(); i != map->end(); ++i){
 		memset(count, 0, sizeof(unsigned int)*24);
@@ -617,7 +617,7 @@ int main (int argc, char**argv){
 
 	matCounts = matHash();
 
-	make_four_count( bam24(argv[1]) );
+	make_four_count( matCounts, bam24(argv[1]) );
 
 	parms[3] = 30.0;
 	
