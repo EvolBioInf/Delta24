@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <vector>
+#include <list>
 
 typedef std::pair< std::size_t, char> seqNuc_t;
 

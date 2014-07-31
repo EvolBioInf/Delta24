@@ -12,7 +12,7 @@ using namespace std;
 
 /* seqID nuc */
 
-vector<vector<entry>*>* bam24( char * filename){
+mappedReads_t* bam24( char * filename){
 	SamFile file;
 	SamFileHeader header;
 
@@ -24,7 +24,7 @@ vector<vector<entry>*>* bam24( char * filename){
 
 	size_t length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = new vector<vector<entry>*>(length, NULL);
+	auto ret = new mappedReads_t(length, NULL);
 
 	SamRecord record, next_record;
 
@@ -35,10 +35,8 @@ vector<vector<entry>*>* bam24( char * filename){
 		size_t start = record.get0BasedPosition();
 		size_t length = record.getReadLength();
 
-		if( SamFlag::isProperPair( record.getFlag())){
-			cout << "NANANANAN" << endl;
-		}
-
+		// Our simulations does not contain paired and reads. So the following
+		// code is not yet checked for correctness.
 		/* if( SamFlag::isProperPair( record.getFlag())){
 			file.ReadRecord( header, next_record);
 			int id2 = next_record.getReferenceID();
@@ -60,15 +58,14 @@ vector<vector<entry>*>* bam24( char * filename){
 			}
 		} */
 
-		//cout << length << endl;
-
 		for( size_t i = 0; i < length; i++){
 			int pos_in_ref = i + start;//record.getCigarInfo()->getRefPosition(i, start);
 
 			if( (*ret)[pos_in_ref] == NULL){
-				(*ret)[pos_in_ref] = new vector<entry>();
+				(*ret)[pos_in_ref] = new std::vector<seqNuc_t>();
 			}
-			entry p = make_pair(seqID, record.getSequence(i));
+
+			seqNuc_t p = make_pair(seqID, record.getSequence(i));
 			(*ret)[pos_in_ref]->push_back(p);
 		}
 	}

@@ -44,14 +44,18 @@ inline static count_t char2uint( const char c){
 	return ret;
 }
 
-matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection){
+matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
+
 	matHash *matCounts = new matHash();
 
-	size_t length = projection->size();
-	for (size_t i = 0; i < length - distance; ++i){
-		size_t j = i + distance;
+	mappedReads_t::const_iterator I = begin;
+	mappedReads_t::const_iterator J = begin;
+	advance(J, distance);
 
-		if( (*projection)[i] == NULL || (*projection)[j] == NULL){
+	//size_t length = projection->size();
+	//for (size_t i = 0; i < length - distance; ++i){
+	for(; J < end; I++, J++){
+		if( !*I || !*J || !(*I)->size() || !(*J)->size() ){
 			continue;
 		}
 
@@ -65,11 +69,11 @@ matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection
 		}
 
 		// FIXME: The following line is fugly. Fix that type!
-		for( auto& it: *((*projection)[i]) ){
+		for( auto it: **I ){
 			countA[char2uint(it.second)]++;
 		}
 
-		for( auto& it: *((*projection)[j]) ){
+		for( auto it: **J ){
 			countB[char2uint(it.second)]++;
 		}
 
@@ -83,11 +87,11 @@ matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection
 
 		assert(countA[sortA[1]] >= countA[sortA[2]]);
 
-		auto ii = ((*projection)[i])->begin();
-		auto ie = ((*projection)[i])->end();
+		auto ii = (*I)->begin();
+		auto ie = (*I)->end();
 
-		auto ji = ((*projection)[j])->begin();
-		auto je = ((*projection)[j])->end();
+		auto ji = (*J)->begin();
+		auto je = (*J)->end();
 
 		while( ii != ie && ji != je ){
 			if( ii->first < ji->first ){
@@ -118,12 +122,12 @@ matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection
 	return matCounts;
 }
 
-float make_four_count ( matHash matCounts, mappedReads_t::const_iterator begin, mappedReads_t::const_iterator end){
+float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
 	unsigned int count[24];
 	for (auto i = begin; i != end; ++i){
 		memset(count, 0, sizeof(unsigned int)*24);
 
-		if( !*i) {
+		if( !*i || !(*i)->size()) {
 			matCounts.inc(count);
 			continue;
 		}
@@ -154,18 +158,6 @@ void setcoef(float *coef, float *parms){
 	coef[12]=pow(parms[0],2)+parms[2]*(1-parms[0])*parms[0];
 	coef[13]=(-2*pow(parms[0],2)+2*parms[0]);
 	coef[14]=(-pow(parms[0],2)+parms[0]);
-}
-
-void
-printCount( matHash matCounts ){
-	ofstream derp("matCounts.tmp", ios::out);
-		for( auto it : matCounts){
-			for( size_t i = 0; i<25; i++){
-				derp << it.second[i] << " ";
-			}
-			derp << endl;
-		}
-	derp.close();
 }
 
 int main (int argc, char**argv){
@@ -248,7 +240,7 @@ int main (int argc, char**argv){
 	D_1 = parms[0];
 
 	for (int D = start; D < stop; D += inc){
-		auto matCounts = *make_sorted_count ( D, foobar);
+		auto matCounts = *make_sorted_count ( D, foobar->begin(), foobar->end());
 
 		lnL_0 = 0;
 
