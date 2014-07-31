@@ -419,60 +419,6 @@ float make_four_count (vector<vector<entry>*>* map){
 	return 30.0;
 }
 
-
-float make_four_count (matFile <unsigned int> *file, int LS, unsigned int MIN, unsigned int MAX){
-	//returns an estimate of average read depth, ignoring coverage 0 sites.
-
-	const unsigned int MASK = 0x3;
-
-	matFile<unsigned int>::iterator A;
-	matFile<unsigned int>::iterator end;
-	unsigned int *a, *aend;
-	unsigned int count[24];
-	
-	//long unsigned int All=0;
-	
-	for (int f=0; f< LS; f++){
-		file[f].read();
-		A = file[f].begin();
-		end = file[f].end();
-
-		for (; A != end ; ++A){
-			//cout << int(end.ptr_)-int(A.ptr_) << endl;
-			memset(count, 0, sizeof(unsigned int)*24);
-
-			a = A.inner_begin();
-			aend = A.inner_end();
-			for(; a != aend; a++){
-				count[ (*a) & MASK ]++;
-			};
-
-			//All=(count[0]+count[1]+count[2]+count[3]);
-			//if ( All > MIN && All < MAX) {
-				matCounts.inc(count);
-			//}
-		};
-
-		file[f].close();
-	}
-
-	//delete counts["0,0,0,0"];
-	//counts.erase("0,0,0,0");
-	return 30; // FIXME: Yet another magic number
-};
-
-void
-printCount( matHash matCounts ){
-	ofstream derp("matCounts.tmp", ios::out);
-	for( auto it : matCounts){
-		for( size_t i = 0; i<25; i++){
-			derp << it.second[i] << " ";
-		}
-		derp << endl;
-	}
-	derp.close();
-}
-
 matFile <unsigned int> *read (char *filename, int LS){
 	//This is the basic function to set up an array of matFiles from a bam file. The argument LS determines the number of scaffolds to be used from the bam file.
 
@@ -613,62 +559,6 @@ matFile <unsigned int> *read (char *filename, int LS){
 	return myFile;
 };
 
-void printPosNew(vector<vector<entry>*>* V){
-	ofstream derp("posNew.tmp", ios::out);
-
-	for( auto i = V->begin(); i != V->end(); i++){
-		if( !*i){
-			derp << endl;
-			continue;
-		}
-
-		for( auto j = (*i)->begin(); j != (*i)->end(); j++){
-			derp << j->second << ":" << j->first+1 << "\t";
-		}
-		derp << endl;
-	}
-	
-	derp.close();
-}
-
-void printPosOld( matFile <unsigned int> *file){
-	ofstream derp("posOld.tmp", ios::out);
-
-	matFile<unsigned int>::iterator A;
-	matFile<unsigned int>::iterator end;
-	unsigned int *a, *aend;
-	
-	
-	int f = 0;
-	file[f].read();
-	A = file[f].begin();
-	end = file[f].end();
-
-	for (; A != end ; ++A){
-		a = A.inner_begin();
-		aend = A.inner_end();
-
-		while( a != aend){
-			char c;
-			switch(*a & 0x3){
-				case 0: c = 'A'; break;
-				case 1: c = 'C'; break;
-				case 2: c = 'G'; break;
-				case 3: c = 'T'; break;
-			}
-			derp << c << ":" << (*a>>2) << "\t";
-			a++;
-		}
-
-		derp << endl;
-	}
-
-	file[f].close();
-	
-
-	derp.close();
-}
-
 void setcoef(float *coef, float *parms){
 	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
 	coef[1]=log(0.333333333333333*parms[1]*(-parms[1] + 1));
@@ -727,17 +617,9 @@ int main (int argc, char**argv){
 
 	matCounts = matHash();
 
-	matCounts.init(max);
-
-	/*printPosNew( bam24(argv[1]));
 	make_four_count( bam24(argv[1]) );
-*/
+
 	parms[3] = 30.0;
-
-	printPosOld( data);
-	parms[3] = make_four_count(data, LS, min, max);
-
-	//printCount(matCounts);
 	
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
