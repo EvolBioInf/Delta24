@@ -31,8 +31,6 @@
 
 using namespace std;
 
-int names_allocated=0;
-
 typedef unsigned int count_t;
 
 inline static count_t char2uint( const char c){
@@ -67,9 +65,6 @@ T sum (T* X){
 	}
 	return ret;
 }
-
-//A global. Can easily just be moved into main()
-matHash matCounts;
 
 int uint_cmp(const void *a, const void *b){
 	const unsigned int *ia = (const unsigned int *)a;
@@ -214,31 +209,22 @@ printCount( matHash matCounts ){
 
 int main (int argc, char**argv){
 
-	//options : Flat (i.e. no paired end info)
-	//
-
-	if(argc!=8){
-		printf("usage: %s <bam file> <number of scaffolds> <start distance> <stop distance> <increment> <min> <max>\n", argv[0]);
+	if(argc!=5){
+		printf("usage: %s <bam file> <start distance> <stop distance> <increment>\n", argv[0]);
 		exit(0);
-	};
+	}
 
-	int LS=atoi(argv[2]); 
-	int start=atoi(argv[3]);
-	int stop=atoi(argv[4]);
-	int inc=atoi(argv[5]);
-	int min=atoi(argv[6]);
-	int max=atoi(argv[7]);
+	int start=atoi(argv[2]);
+	int stop=atoi(argv[3]);
+	int inc=atoi(argv[4]);
 
-	printf("bam file:%s number of scaffolds:%d start distance:%d stop distance:%d increment:%d min:%d max:%d\n", argv[1], LS, start, stop, inc, min, max);
+	printf("bam file:%s start distance:%d stop distance:%d increment:%d\n", argv[1], start, stop, inc);
 
-	cout << min << ", " << max << endl;
 
 	float D_0, D_1, lnL_0, lnL_1, T;
 	float parms[4]={0.01, 0.01, 0.0, 0.0};
 	float coef[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	float iJ[2][2], J[2][2], R[2];
-
-	maptype::iterator it, end;
 
 	float *X, C;
 
@@ -248,8 +234,7 @@ int main (int argc, char**argv){
 	R[0]=100;
 	R[1]=100;
 
-	matCounts = matHash();
-
+	auto matCounts = matHash();
 	auto foobar = bam24(argv[1]);
 
 	make_four_count( matCounts, foobar );

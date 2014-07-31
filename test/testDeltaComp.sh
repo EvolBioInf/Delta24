@@ -17,4 +17,4 @@ echo Distance   Delta
 mlRho -m 1 -M 5 | grep '^[1-9]' | awk '{print $1 "\t" $4}' | perl -pe 's/</\t/g' | awk '{print $1 "\t" $3}'
 echo COMMENT Run Delta24
 echo Distance   Delta
-/usr/bin/time -f "%e %M" ../src/Delta24 test.bam 1 1 6 1 0 100 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}'
+/usr/bin/time -f "%e %M" ../src/Delta24 test.bam 1 6 1 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}'
