@@ -10,8 +10,14 @@
 
 using namespace std;
 
-/* seqID nuc */
 
+/**
+ * This function reads a BAM/SAM file and maps the read contained
+ * within. The resulting datatype is pos -> [(readID, Nuc)] in SML
+ * notation. Basically, its a vector with the length of the reference
+ * sequence. At each position there is a list of all read which have
+ * a nucleotide mapping to that position.
+ */
 mappedReads_t* bam24( char * filename){
 	SamFile file;
 	SamFileHeader header;
@@ -20,8 +26,8 @@ mappedReads_t* bam24( char * filename){
 		return NULL;
 	}
 
+	// Get the Reference Sequence (SQ)
 	SamHeaderRecord *header_record = header.getNextSQRecord();
-
 	size_t length = atoi(header_record->getTagValue("LN"));
 
 	auto ret = new mappedReads_t(length, std::list<seqNuc_t>());
@@ -29,6 +35,7 @@ mappedReads_t* bam24( char * filename){
 	SamRecord record, next_record;
 
 	size_t counter = 0;
+	// Get the next read.
 	while( file.ReadRecord(header, record)){
 		size_t seqID = counter++;
 
@@ -58,13 +65,11 @@ mappedReads_t* bam24( char * filename){
 			}
 		} */
 
+		// iterate over the read.
 		for( size_t i = 0; i < length; i++){
 			int pos_in_ref = i + start;//record.getCigarInfo()->getRefPosition(i, start);
 
-			//if( (*ret)[pos_in_ref] == NULL){
-			//	(*ret)[pos_in_ref] = new std::list<seqNuc_t>();
-			//}
-
+			// add the current nucleotide to the map.
 			seqNuc_t p = make_pair(seqID, record.getSequence(i));
 			(*ret)[pos_in_ref].push_back(p);
 		}

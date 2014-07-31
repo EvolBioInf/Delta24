@@ -31,8 +31,12 @@
 
 using namespace std;
 
+// use count_t instead of uint, so we might be able to switch types in a future version
 typedef unsigned int count_t;
 
+/**
+ * @brief Maps nucleotides to a two bit code.
+ */
 inline static count_t char2uint( const char c){
 	count_t ret = 0;
 	switch( c){
@@ -44,6 +48,9 @@ inline static count_t char2uint( const char c){
 	return ret;
 }
 
+/**
+ * This function does some sorting and counting.
+ */
 matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
 
 	matHash *matCounts = new matHash();
@@ -52,6 +59,7 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 	mappedReads_t::const_iterator J = begin;
 	advance(J, distance);
 
+	// Iterate over all positions, with `I` and `J` being `distance` positions apart.
 	for(; J < end; I++, J++){
 		if( I->empty() == true || J->empty() == true ){
 			continue;
@@ -74,6 +82,12 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			countB[char2uint(it.second)]++;
 		}
 
+		/* For a reason I dont know yet, we need to sort the nucleotides by frequency.
+		 * The sortA/B arrays represent the sorted sequence in a fast lookup table.
+		 * Here the sorting is implemented using `std::sort` and the new and shiny
+		 * lambdas.
+		 * Sort is descending!
+		 */
 		auto cmpA = [&countA]( count_t a, count_t b){
 			return countA[a] > countA[b];
 		};
@@ -82,14 +96,13 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			return countB[a] > countB[b];
 		});
 
-		assert(countA[sortA[1]] >= countA[sortA[2]]);
-
 		auto ii = I->begin();
 		auto ie = I->end();
 
 		auto ji = J->begin();
 		auto je = J->end();
 
+		// I dont know, what these next lines are for.
 		while( ii != ie && ji != je ){
 			if( ii->first < ji->first ){
 				count[sortA[ char2uint(ii->second) ] ]++;
@@ -121,13 +134,16 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 
 float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
 	unsigned int count[24];
+	// Iterate over all elements.
 	for (auto i = begin; i != end; ++i){
 		memset(count, 0, sizeof(unsigned int)*24);
+		// Deal with positions without mapped reads.
 		if( i->empty() == true ) {
 			matCounts.inc(count);
 			continue;
 		}
 
+		// Count the number of mapped reads at this position.
 		for( auto j = i->begin(); j != i->end(); j++){
 			count[ char2uint(j->second) ]++;
 		}
@@ -135,6 +151,7 @@ float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator b
 		matCounts.inc(count);
 	}
 
+	// Hm, 30? Why not 42?
 	return 30.0;
 }
 
@@ -190,6 +207,7 @@ int main (int argc, char**argv){
 
 	parms[3] = 30.0;
 	
+	// some loop
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
 
