@@ -235,7 +235,7 @@ vector<char>* getCalls( SamRecord &record, size_t size ){
 	int get = 0;
 	for( size_t i=0; i< size; i++){
 		get = record.getCigarInfo()->getQueryIndex(i);
-		(*v)[i] = (get > 0 ? record.getSequence(i) : '*');
+		(*v)[i] = (get >= 0 ? record.getSequence(i) : '*');
 	}
 	return v;
 }
