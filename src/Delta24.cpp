@@ -623,32 +623,30 @@ int main (int argc, char**argv){
 	
 	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
-		memset(J[0], 0, sizeof(float)*2);
-		memset(J[1], 0, sizeof(float)*2);
-		memset(R, 0, sizeof(float)*2);
-		it=matCounts.begin();
-		end=matCounts.end();
-		while (it!=end ){
-			X=it->second;
-			C=X[24];
+
+		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
+		R[0] = R[1] = 0.0;
+
+		for( auto it : matCounts){
+			X = it.second;
+			C = X[24];
 			J[0][0] += J00(parms, X, coef) * C;
 			J[0][1] += J01(parms, X, coef) * C;
 			J[1][0] += J10(parms, X, coef) * C;
 			J[1][1] += J11(parms, X, coef) * C;
 			R[0] += (R0(parms, X, coef) ) * C;
 			R[1] += (R1(parms, X, coef) ) * C;
-			++it;
 		}
 
 		auto detJ = J[0][0] * J[1][1] - J[0][1] * J[1][0];
 
-		iJ[0][0]= 1/detJ * J[1][1];
-		iJ[0][1]=-1/detJ * J[0][1];
-		iJ[1][0]=-1/detJ * J[1][0];
-		iJ[1][1]= 1/detJ * J[0][0];
+		iJ[0][0] = 1/detJ * J[1][1];
+		iJ[0][1] =-1/detJ * J[0][1];
+		iJ[1][0] =-1/detJ * J[1][0];
+		iJ[1][1] = 1/detJ * J[0][0];
 
-		R[0]=(R[0]*iJ[0][0]+R[1]*iJ[0][1]);
-		R[1]=(R[0]*iJ[1][0]+R[1]*iJ[1][1]);
+		R[0] = R[0] * iJ[0][0] + R[1] * iJ[0][1];
+		R[1] = R[0] * iJ[1][0] + R[1] * iJ[1][1];
 
 		if( parms[0] > R[0]) {
 			parms[0]-= R[0];
@@ -665,70 +663,63 @@ int main (int argc, char**argv){
 
 	cout << "Pi=" << parms[0] << ", Epsilon=" << parms[1]  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
 
-	D_0=parms[0];
-	D_1=parms[0];
+	D_0 = parms[0];
+	D_1 = parms[0];
 
-	for (int D=start; D<stop; D+=inc){
+	for (int D = start; D < stop; D += inc){
 		matCounts.clear();
 		make_sorted_count(D, data, LS, min, max);
 		
-		lnL_0=0;
+		lnL_0 = 0;
 
-		if ( D_1<1 && D_1>0 ) {
-			parms[2]=D_1;
+		if ( D_1 < 1 && D_1 > 0 ) {
+			parms[2] = D_1;
 		} else {
-			parms[2]=parms[0];
-			D_0=parms[0];
+			parms[2] = parms[0];
+			D_0 = parms[0];
 		}
 
-		it=matCounts.begin();
-		end=matCounts.end();
 		setcoef(coef, parms);
 
-		while (it!=end ){
-			X=it->second;
-			C=X[24];
-			lnL_0+=F0(parms, X, coef)*C;
-			++it;
+		for( auto it: matCounts){
+			X = it.second;
+			C = X[24];
+			lnL_0 += F0(parms, X, coef) * C;
 		}
 
 		lnL_1=0;
 		D_1=D_0/2;
 		parms[2]=D_1;
-		it=matCounts.begin();
 		setcoef(coef, parms);
-		while (it!=end ){
-			X=it->second;
-			C=X[24];
-			lnL_1+=F0(parms, X, coef)*C;
-			++it;
+		for( auto it: matCounts){
+			X = it.second;
+			C = X[24];
+			lnL_1 += F0(parms, X, coef) * C;
 		}
 
-		int inc=0;
-		while (fabs(D_0-D_1)>0.0000001 ){
-			if (inc>15){
-				cerr << "Failure to converge\n";
-				break;
-			}
-
-			inc++;
-			T=parms[2]-lnL_1*(D_1-D_0)/(lnL_1-lnL_0);
-			lnL_0=lnL_1;
-			D_0=D_1;
-			D_1=T;
-			parms[2]=T;
-			lnL_1=0;
-			it=matCounts.begin();
+		int passes = 0;
+		while (fabs(D_0 - D_1) > 0.0000001 && passes <= 15){
+			T = parms[2]-lnL_1*(D_1-D_0)/(lnL_1-lnL_0);
+			lnL_0 = lnL_1;
+			D_0 = D_1;
+			D_1 = T;
+			parms[2] = T;
+			lnL_1 = 0;
 			setcoef(coef, parms);
 
-			while (it!=end ){
-				X=it->second;
-				C=X[24];
-				lnL_1+=F0(parms, X, coef)*C;
-				++it;
+			for( auto it: matCounts){
+				X = it.second;
+				C = X[24];
+				lnL_1 += F0(parms, X, coef) * C;
 			}
+
+			passes++;
+		}
+
+		if (passes > 15){
+			cerr << "Failure to converge\n";
 		}
 
 		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << parms[0] << ", Epsilon=" << parms[1] << endl;
-	};
-};
+	}
+}
