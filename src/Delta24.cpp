@@ -44,38 +44,6 @@ inline static count_t char2uint( const char c){
 	return ret;
 }
 
-//reads a SamRecord into a character array. The buffer filled in this function is used by a switch/case statement in the function "read" to construct a matFile. 
-
-vector<char>* getCalls( SamRecord &record, size_t size ){
-	std::vector<char> *v = new vector<char>(size);
-	int get = 0;
-	for( size_t i=0; i< size; i++){
-		get = record.getCigarInfo()->getQueryIndex(i);
-		(*v)[i] = (get >= 0 ? record.getSequence(i) : '*');
-	}
-	return v;
-}
-
-//returns the sum of all the different reads at a specific site, and allows us to calculate read depth.
-template< typename T>
-T sum (T* X){
-	T ret = (T)0;
-	for( size_t i= 0; i< 24; i++ ){
-		ret += X[i];
-	}
-	return ret;
-}
-
-int uint_cmp(const void *a, const void *b){
-	const unsigned int *ia = (const unsigned int *)a;
-	const unsigned int *ib = (const unsigned int *)b;
-	return *ia - *ib;
-}
-
-int uint_cmp_desc(const void *a, const void *b){
-	return - uint_cmp(a,b);
-}
-
 matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection){
 	matHash *matCounts = new matHash();
 
@@ -150,9 +118,9 @@ matHash* make_sorted_count ( size_t distance, vector<vector<entry>*>* projection
 	return matCounts;
 }
 
-float make_four_count ( matHash matCounts, vector<vector<entry>*>* map){
+float make_four_count ( matHash matCounts, mappedReads_t::const_iterator begin, mappedReads_t::const_iterator end){
 	unsigned int count[24];
-	for (auto i = map->begin(); i != map->end(); ++i){
+	for (auto i = begin; i != end; ++i){
 		memset(count, 0, sizeof(unsigned int)*24);
 
 		if( !*i) {
@@ -161,14 +129,7 @@ float make_four_count ( matHash matCounts, vector<vector<entry>*>* map){
 		}
 
 		for( auto j = (*i)->begin(); j != (*i)->end(); j++){
-			size_t offset = 0;
-			switch( j->second){
-				case 'A': offset = 0; break;
-				case 'C': offset = 1; break;
-				case 'G': offset = 2; break;
-				case 'T': offset = 3; break;
-			}
-			count[ offset ]++;
+			count[ char2uint(j->second) ]++;
 		}
 
 		matCounts.inc(count);
@@ -237,7 +198,7 @@ int main (int argc, char**argv){
 	auto matCounts = matHash();
 	auto foobar = bam24(argv[1]);
 
-	make_four_count( matCounts, foobar );
+	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
 	parms[3] = 30.0;
 	

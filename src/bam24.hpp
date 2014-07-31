@@ -4,8 +4,12 @@
 #include <utility>
 #include <vector>
 
+typedef std::pair< std::size_t, char> seqNuc_t;
+
+typedef std::vector<std::vector<seqNuc_t>*> mappedReads_t;
+
 typedef std::pair< std::size_t, char> entry;
 
-std::vector<std::vector<entry>*>* bam24( char * filename);
+mappedReads_t* bam24( char * filename);
 
 #endif
