@@ -24,7 +24,7 @@ mappedReads_t* bam24( char * filename){
 
 	size_t length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = new mappedReads_t(length, NULL);
+	auto ret = new mappedReads_t(length, std::list<seqNuc_t>());
 
 	SamRecord record, next_record;
 
@@ -61,12 +61,12 @@ mappedReads_t* bam24( char * filename){
 		for( size_t i = 0; i < length; i++){
 			int pos_in_ref = i + start;//record.getCigarInfo()->getRefPosition(i, start);
 
-			if( (*ret)[pos_in_ref] == NULL){
-				(*ret)[pos_in_ref] = new std::vector<seqNuc_t>();
-			}
+			//if( (*ret)[pos_in_ref] == NULL){
+			//	(*ret)[pos_in_ref] = new std::list<seqNuc_t>();
+			//}
 
 			seqNuc_t p = make_pair(seqID, record.getSequence(i));
-			(*ret)[pos_in_ref]->push_back(p);
+			(*ret)[pos_in_ref].push_back(p);
 		}
 	}
 

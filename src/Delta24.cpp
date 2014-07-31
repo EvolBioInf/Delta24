@@ -52,10 +52,8 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 	mappedReads_t::const_iterator J = begin;
 	advance(J, distance);
 
-	//size_t length = projection->size();
-	//for (size_t i = 0; i < length - distance; ++i){
 	for(; J < end; I++, J++){
-		if( !*I || !*J || !(*I)->size() || !(*J)->size() ){
+		if( I->empty() == true || J->empty() == true ){
 			continue;
 		}
 
@@ -68,12 +66,11 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			sortA[k] = sortB[k] = k;
 		}
 
-		// FIXME: The following line is fugly. Fix that type!
-		for( auto it: **I ){
+		for( auto it: *I ){
 			countA[char2uint(it.second)]++;
 		}
 
-		for( auto it: **J ){
+		for( auto it: *J ){
 			countB[char2uint(it.second)]++;
 		}
 
@@ -87,11 +84,11 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 
 		assert(countA[sortA[1]] >= countA[sortA[2]]);
 
-		auto ii = (*I)->begin();
-		auto ie = (*I)->end();
+		auto ii = I->begin();
+		auto ie = I->end();
 
-		auto ji = (*J)->begin();
-		auto je = (*J)->end();
+		auto ji = J->begin();
+		auto je = J->end();
 
 		while( ii != ie && ji != je ){
 			if( ii->first < ji->first ){
@@ -126,13 +123,12 @@ float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator b
 	unsigned int count[24];
 	for (auto i = begin; i != end; ++i){
 		memset(count, 0, sizeof(unsigned int)*24);
-
-		if( !*i || !(*i)->size()) {
+		if( i->empty() == true ) {
 			matCounts.inc(count);
 			continue;
 		}
 
-		for( auto j = (*i)->begin(); j != (*i)->end(); j++){
+		for( auto j = i->begin(); j != i->end(); j++){
 			count[ char2uint(j->second) ]++;
 		}
 
