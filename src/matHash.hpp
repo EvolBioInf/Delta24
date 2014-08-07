@@ -36,9 +36,8 @@ private:
 	maptype* hmap;
 public:
 	matHash();
-	void init( std::size_t MAX);
-
 	void inc( unsigned int *key);
+	void inc( const std::array<unsigned int, 24>& key);
 
 	void clear();
 

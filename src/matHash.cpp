@@ -13,10 +13,6 @@ matHash::matHash(){
 	this->hmap = new maptype;
 }
 
-/* ignore */
-void matHash::init( size_t MAX){
-}
-
 /**
  * Increase the count of a pattern
  */
@@ -42,6 +38,25 @@ void matHash::inc( unsigned int *key){
 
 		// insert the new value
 		this->hmap->insert(maptype::value_type(K, value ));
+	}
+}
+
+void matHash::inc( const array<unsigned int, 24>& key){
+	// check if the key is already in the map
+	auto elem = this->hmap->find(key);
+	if( elem != this->hmap->end() ){
+		// increase the count
+		elem->second[24]++;
+	} else {
+		// create a new value to be saved in the map
+		auto value = (float*) new float[25];
+		for (size_t i = 0; i < 24; ++i){
+			value[i] = float(key[i]);
+		}
+		value[24] = 1.0;
+
+		// insert the new value
+		this->hmap->insert(maptype::value_type(key, value ));
 	}
 }
 

@@ -66,7 +66,8 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			continue;
 		}
 
-		count_t count[24] = {0};
+		array<count_t, 24> count;
+		count.fill(0);
 		count_t countA[4] = {0}, countB[4] = {0};
 
 		array<count_t, 4> sortA, sortB;
@@ -132,11 +133,13 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 }
 
 void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
-	unsigned int count[24];
+	
 	// Iterate over all elements.
 	for (auto i = begin; i != end; ++i){
-		memset(count, 0, sizeof(unsigned int)*24);
 		// Deal with positions without mapped reads.
+		array<count_t, 24> count;
+		count.fill(0);
+
 		if( i->empty() == true ) {
 			matCounts.inc(count);
 			continue;
