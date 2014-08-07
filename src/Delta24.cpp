@@ -13,6 +13,7 @@
 #include <cmath>
 #include <math.h>
 #include <algorithm>
+#include <numeric>
 
 //needed to read bam files.
 #include "SamFile.h"
@@ -69,12 +70,10 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 		count_t countA[4] = {0}, countB[4] = {0};
 
 		array<count_t, 4> sortA, sortB;
+		iota( sortA.begin(), sortA.end(), 0);
+		iota( sortB.begin(), sortB.end(), 0);
 
-		for( size_t k=0; k<4; k++){
-			sortA[k] = sortB[k] = k;
-		}
-
-		for( auto it: *I ){
+		for( const auto& it: *I ){
 			countA[char2uint(it.second)]++;
 		}
 
@@ -106,23 +105,23 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 		while( ii != ie && ji != je ){
 			if( ii->first < ji->first ){
 				count[sortA[ char2uint(ii->second) ] ]++;
-				ii++;
+				++ii;
 			} else if ( ii->first > ji->first ){
 				count[sortB[ char2uint(ji->second)] + 4]++;
-				ji++;
+				++ji;
 			} else {
 				size_t offset = sortB[char2uint(ji->second)] + sortA[char2uint(ii->second)] * 4;
 				count[8 + offset]++;
-				ii++;
-				ji++;
+				++ii;
+				++ji;
 			}
 		}
 
-		for(; ii != ie; ii++){
+		for(; ii != ie; ++ii){
 			count[ sortA[char2uint(ii->second)]]++;
 		}
 
-		for(; ji != je; ji++){
+		for(; ji != je; ++ji){
 			count[ sortB[char2uint(ji->second)] + 4]++;
 		}
 
@@ -132,7 +131,7 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 	return matCounts;
 }
 
-float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
+void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
 	unsigned int count[24];
 	// Iterate over all elements.
 	for (auto i = begin; i != end; ++i){
@@ -144,15 +143,12 @@ float make_four_count ( matHash matCounts, const mappedReads_t::const_iterator b
 		}
 
 		// Count the number of mapped reads at this position.
-		for( auto j = i->begin(); j != i->end(); j++){
+		for( auto j = i->begin(); j != i->end(); ++j){
 			count[ char2uint(j->second) ]++;
 		}
 
 		matCounts.inc(count);
 	}
-
-	// Hm, 30? Why not 42?
-	return 30.0;
 }
 
 void setcoef(float *coef, float *parms){
@@ -175,56 +171,58 @@ void setcoef(float *coef, float *parms){
 
 int main (int argc, char**argv){
 
-	if(argc!=5){
+	if( argc != 5 ){
 		printf("usage: %s <bam file> <start distance> <stop distance> <increment>\n", argv[0]);
 		exit(0);
 	}
 
-	int start=atoi(argv[2]);
-	int stop=atoi(argv[3]);
-	int inc=atoi(argv[4]);
+	size_t start = atoi(argv[2]);
+	size_t stop  = atoi(argv[3]);
+	size_t inc   = atoi(argv[4]);
 
-	printf("bam file:%s start distance:%d stop distance:%d increment:%d\n", argv[1], start, stop, inc);
+	printf("bam file:%s start distance:%lu stop distance:%lu increment:%lu\n", argv[1], start, stop, inc);
 
 
-	float D_0, D_1, lnL_0, lnL_1, T;
-	float parms[4]={0.01, 0.01, 0.0, 0.0};
-	float coef[15]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	float iJ[2][2], J[2][2], R[2];
-
-	float *X, C;
+	float D_0, D_1;
+	float parms[4] = {0.01, 0.01, 0.0, 0.0};
+	float coef[15] = {0};
+	float R[2];
+	float &pi = parms[0];
+	float &eps = parms[1];
 
 	cout << start << ", " << stop << endl;
 	cout << "Starting main loop.\n";
-
-	R[0]=100;
-	R[1]=100;
 
 	auto matCounts = matHash();
 	auto foobar = bam24(argv[1]);
 
 	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
+	// FIXME: Hm, 30? Why not 42?
 	parms[3] = 30.0;
+	R[0] = 100;
+	R[1] = 100;
 	
 	// some loop
-	while ((fabs(R[0])+fabs(R[1])>0.00001 )|| isnan(R[0]) || isnan(R[1]) ){
+	while ( (fabsf(R[0])+fabsf(R[1]) > 0.00001f )|| isnan(R[0]) || isnan(R[1]) ){
 		setcoef(coef, parms);
+		float iJ[2][2], J[2][2];
 
 		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
 		R[0] = R[1] = 0.0;
 
 		for( auto it : matCounts){
-			X = it.second;
-			C = X[24];
+			float *X = it.second;
+			float C = X[24];
 			J[0][0] += J00(parms, X, coef) * C;
 			J[0][1] += J01(parms, X, coef) * C;
 			J[1][0] += J10(parms, X, coef) * C;
 			J[1][1] += J11(parms, X, coef) * C;
-			R[0] += (R0(parms, X, coef) ) * C;
-			R[1] += (R1(parms, X, coef) ) * C;
+			R[0] += R0(parms, X, coef) * C;
+			R[1] += R1(parms, X, coef) * C;
 		}
 
+		// invert J
 		auto detJ = J[0][0] * J[1][1] - J[0][1] * J[1][0];
 
 		iJ[0][0] = 1/detJ * J[1][1];
@@ -232,71 +230,76 @@ int main (int argc, char**argv){
 		iJ[1][0] =-1/detJ * J[1][0];
 		iJ[1][1] = 1/detJ * J[0][0];
 
+		// FIXME: Is it just me, or do the following lines look like a bug?
 		R[0] = R[0] * iJ[0][0] + R[1] * iJ[0][1];
 		R[1] = R[0] * iJ[1][0] + R[1] * iJ[1][1];
 
-		if( parms[0] > R[0]) {
-			parms[0]-= R[0];
+		if( pi > R[0]) {
+			pi-= R[0];
 		} else {
-			parms[0]/= 2.0;
+			pi/= 2.0;
 		}
 
-		if( parms[1] > R[1]) {
-			parms[1]-= R[1];
+		if( eps > R[1]) {
+			eps-= R[1];
 		} else {
-			parms[1]/= 2.0;
+			eps/= 2.0;
 		}
 	}
 
-	cout << "Pi=" << parms[0] << ", Epsilon=" << parms[1]  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
+	cout << "Pi=" << pi << ", Epsilon=" << eps  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
+	cout << "R(" << R[0] << "," << R[1] << ")" << endl;
 
-	D_0 = parms[0];
-	D_1 = parms[0];
+	D_0 = pi;
+	D_1 = pi;
 
-	for (int D = start; D < stop; D += inc){
+	matCounts.clear();
+
+	#pragma omp parallel for
+	for (size_t D = start; D < stop; D += inc){
 		auto matCounts = *make_sorted_count ( D, foobar->begin(), foobar->end());
 
-		lnL_0 = 0;
+		float lnL_0 = 0;
+		float lnL_1 = 0;
 
+		// FIXME: why does an iteration depend on the previous?
 		if ( D_1 < 1 && D_1 > 0 ) {
 			parms[2] = D_1;
 		} else {
-			parms[2] = parms[0];
-			D_0 = parms[0];
+			cout << "broken D_1" << D_1 << endl;
+			parms[2] = pi;
+			D_0 = pi;
 		}
 
 		setcoef(coef, parms);
+		D_1 = D_0 / 2;
+		parms[2] = D_1;
 
-		for( auto it: matCounts){
-			X = it.second;
-			C = X[24];
-			lnL_0 += F0(parms, X, coef) * C;
+		for( const auto& it: matCounts){
+			float *X = it.second;
+			lnL_0 += F0(parms, X, coef) * X[24];
 		}
 
-		lnL_1=0;
-		D_1=D_0/2;
-		parms[2]=D_1;
 		setcoef(coef, parms);
 		for( auto it: matCounts){
-			X = it.second;
-			C = X[24];
-			lnL_1 += F0(parms, X, coef) * C;
+			float *X = it.second;
+			lnL_1 += F0(parms, X, coef) * X[24];
 		}
 
 		int passes = 0;
 		while (fabs(D_0 - D_1) > 0.0000001 && passes <= 15){
-			T = parms[2]-lnL_1*(D_1-D_0)/(lnL_1-lnL_0);
+			float temp = parms[2] - lnL_1 * (D_1 - D_0) / (lnL_1 - lnL_0);
+
 			lnL_0 = lnL_1;
 			D_0 = D_1;
-			D_1 = T;
-			parms[2] = T;
+			D_1 = parms[2] = temp;
+
 			lnL_1 = 0;
 			setcoef(coef, parms);
 
 			for( auto it: matCounts){
-				X = it.second;
-				C = X[24];
-				lnL_1 += F0(parms, X, coef) * C;
+				float *X = it.second;
+				lnL_1 += F0(parms, X, coef) * X[24];
 			}
 
 			passes++;
@@ -306,7 +309,7 @@ int main (int argc, char**argv){
 			cerr << "Failure to converge\n";
 		}
 
-		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << parms[0] << ", Epsilon=" << parms[1] << endl;
+		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << pi << ", Epsilon=" << eps << endl;
 		matCounts.clear();
 	}
 }
