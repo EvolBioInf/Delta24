@@ -38,7 +38,7 @@ typedef unsigned int count_t;
 /**
  * @brief Maps nucleotides to a two bit code.
  */
-inline static count_t char2uint( const char c){
+inline static count_t char2uint( const char& c){
 	count_t ret = 0;
 	switch( c){
 		case 'A': ret = 0; break;
@@ -77,7 +77,7 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			countA[char2uint(it.second)]++;
 		}
 
-		for( auto it: *J ){
+		for( const auto& it: *J ){
 			countB[char2uint(it.second)]++;
 		}
 
@@ -95,11 +95,11 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			return countB[a] > countB[b];
 		});
 
-		auto ii = I->begin();
-		auto ie = I->end();
+		auto ii = I->cbegin();
+		auto ie = I->cend();
 
-		auto ji = J->begin();
-		auto je = J->end();
+		auto ji = J->cbegin();
+		auto je = J->cend();
 
 		// I dont know, what these next lines are for.
 		while( ii != ie && ji != je ){
@@ -169,21 +169,7 @@ void setcoef(float *coef, float *parms){
 	coef[14]=(-pow(parms[0],2)+parms[0]);
 }
 
-int main (int argc, char**argv){
-
-	if( argc != 5 ){
-		printf("usage: %s <bam file> <start distance> <stop distance> <increment>\n", argv[0]);
-		exit(0);
-	}
-
-	size_t start = atoi(argv[2]);
-	size_t stop  = atoi(argv[3]);
-	size_t inc   = atoi(argv[4]);
-
-	printf("bam file:%s start distance:%lu stop distance:%lu increment:%lu\n", argv[1], start, stop, inc);
-
-
-	float D_0, D_1;
+void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	float parms[4] = {0.01, 0.01, 0.0, 0.0};
 	float coef[15] = {0};
 	float R[2];
@@ -194,7 +180,7 @@ int main (int argc, char**argv){
 	cout << "Starting main loop.\n";
 
 	auto matCounts = matHash();
-	auto foobar = bam24(argv[1]);
+	auto foobar = bam24(filename);
 
 	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
@@ -250,9 +236,6 @@ int main (int argc, char**argv){
 	cout << "Pi=" << pi << ", Epsilon=" << eps  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
 	cout << "R(" << R[0] << "," << R[1] << ")" << endl;
 
-	D_0 = pi;
-	D_1 = pi;
-
 	matCounts.clear();
 
 	#pragma omp parallel for
@@ -261,15 +244,8 @@ int main (int argc, char**argv){
 
 		float lnL_0 = 0;
 		float lnL_1 = 0;
-
-		// FIXME: why does an iteration depend on the previous?
-		if ( D_1 < 1 && D_1 > 0 ) {
-			parms[2] = D_1;
-		} else {
-			cout << "broken D_1" << D_1 << endl;
-			parms[2] = pi;
-			D_0 = pi;
-		}
+		float D_1 = pi;
+		float D_0 = pi;
 
 		setcoef(coef, parms);
 		D_1 = D_0 / 2;
@@ -312,4 +288,20 @@ int main (int argc, char**argv){
 		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << pi << ", Epsilon=" << eps << endl;
 		matCounts.clear();
 	}
+}
+
+int main (int argc, char**argv){
+
+	if( argc != 5 ){
+		printf("usage: %s <bam file> <start distance> <stop distance> <increment>\n", argv[0]);
+		exit(0);
+	}
+
+	size_t start = atoi(argv[2]);
+	size_t stop  = atoi(argv[3]);
+	size_t inc   = atoi(argv[4]);
+
+	printf("bam file:%s start distance:%lu stop distance:%lu increment:%lu\n", argv[1], start, stop, inc);
+
+	compute(argv[1], start, stop, inc);	
 }
