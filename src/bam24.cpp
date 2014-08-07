@@ -19,7 +19,7 @@ using namespace std;
  * a nucleotide mapping to that position.
  */
 mappedReads_t* bam24( char * filename){
-	SamFile file;
+	SamFile file(ErrorHandler::RETURN);
 	SamFileHeader header;
 
 	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ){

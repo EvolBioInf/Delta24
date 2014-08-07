@@ -49,7 +49,7 @@ void matHash::inc( const array<unsigned int, 24>& key){
 		elem->second[24]++;
 	} else {
 		// create a new value to be saved in the map
-		auto value = (float*) new float[25];
+		float* value = (float*) new float[25];
 		for (size_t i = 0; i < 24; ++i){
 			value[i] = float(key[i]);
 		}
@@ -66,10 +66,11 @@ void matHash::inc( const array<unsigned int, 24>& key){
 void matHash::clear(){
 	auto it = this->hmap->begin();
 	for(; it != this->hmap->end(); it++){
-		delete (*it).second;
+		delete[] (*it).second;
 	} 
 	
 	this->hmap->clear();
+	delete this->hmap;
 }
 
 maptype::iterator matHash::begin(){

@@ -29,6 +29,7 @@
 
 #include "matHash.hpp"
 #include "bam24.hpp"
+#include "dml.hpp"
 
 using namespace std;
 
@@ -146,8 +147,9 @@ void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator be
 		}
 
 		// Count the number of mapped reads at this position.
-		for( auto j = i->begin(); j != i->end(); ++j){
-			count[ char2uint(j->second) ]++;
+		//for( auto j = i->begin(); j != i->end(); ++j){
+		for( auto j: *i){
+			count[ char2uint(j.second) ]++;
 		}
 
 		matCounts.inc(count);
@@ -183,7 +185,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	cout << "Starting main loop.\n";
 
 	auto matCounts = matHash();
-	auto foobar = bam24(filename);
+	mappedReads_t* foobar = bam24(filename);
 
 	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
@@ -241,7 +243,8 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 	#pragma omp parallel for
 	for (size_t D = start; D < stop; D += inc){
-		auto matCounts = *make_sorted_count ( D, foobar->begin(), foobar->end());
+		auto ref = make_sorted_count ( D, foobar->begin(), foobar->end());
+		auto matCounts = *ref;
 
 		float dML_prev = 0;
 		float dML_curr = 0;
@@ -249,18 +252,23 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 		float D_prev = pi;
 
 		setcoef(coef, parms);
-		D_curr = D_prev / 2;
-		parms[2] = D_curr;
+		
+		vector<dml_s> partial;
 
-		for( const auto& it: matCounts){
-			float *X = it.second;
-			dML_prev += F0(parms, X, coef) * X[24];
+		for (auto i = matCounts.begin(); i != matCounts.end(); ++i){
+			partial.push_back(dml_init(parms, i->second, coef ));
 		}
 
+		for( const auto &it: partial){
+			dML_prev += dml_comp(it, coef);
+		}
+
+		D_curr = D_prev / 2;
+		parms[2] = D_curr;
 		setcoef(coef, parms);
-		for( auto it: matCounts){
-			float *X = it.second;
-			dML_curr += F0(parms, X, coef) * X[24];
+
+		for( auto it: partial){
+			dML_curr += dml_comp(it, coef);
 		}
 
 		/**
@@ -298,9 +306,8 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 			dML_curr = 0;
 			setcoef(coef, parms);
 
-			for( auto it: matCounts){
-				float *X = it.second;
-				dML_curr += F0(parms, X, coef) * X[24];
+			for( auto it: partial){
+				dML_curr += dml_comp(it, coef);
 			}
 
 			passes++;
@@ -312,7 +319,10 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 		cout << "D=" << D << ", Delta=" << D_curr << ", Pi=" << pi << ", Epsilon=" << eps << endl;
 		matCounts.clear();
+		delete ref;
 	}
+
+	//delete foobar;
 }
 
 int main (int argc, char**argv){
