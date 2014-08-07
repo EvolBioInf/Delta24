@@ -187,8 +187,6 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
-	// FIXME: Hm, 30? Why not 42?
-	parms[3] = 30.0;
 	R[0] = 100;
 	R[1] = 100;
 	
@@ -245,40 +243,64 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	for (size_t D = start; D < stop; D += inc){
 		auto matCounts = *make_sorted_count ( D, foobar->begin(), foobar->end());
 
-		float lnL_0 = 0;
-		float lnL_1 = 0;
-		float D_1 = pi;
-		float D_0 = pi;
+		float dML_prev = 0;
+		float dML_curr = 0;
+		float D_curr = pi;
+		float D_prev = pi;
 
 		setcoef(coef, parms);
-		D_1 = D_0 / 2;
-		parms[2] = D_1;
+		D_curr = D_prev / 2;
+		parms[2] = D_curr;
 
 		for( const auto& it: matCounts){
 			float *X = it.second;
-			lnL_0 += F0(parms, X, coef) * X[24];
+			dML_prev += F0(parms, X, coef) * X[24];
 		}
 
 		setcoef(coef, parms);
 		for( auto it: matCounts){
 			float *X = it.second;
-			lnL_1 += F0(parms, X, coef) * X[24];
+			dML_curr += F0(parms, X, coef) * X[24];
 		}
 
+		/**
+		 * The next loop is a Newton iteration, or so I guess: From the (imaginary)
+		 * function ML(D) we need the maximum. Standard school maths tells us to
+		 * look at ML'(D)=0. I this code ML'(D)=\sum_X F0(X,D,…). 
+		 *
+		 * The process used here can be expressed as:
+		 *
+		 *  D_{n+1} = D_n - ML'(D) / ML''(D)
+		 *
+		 * Since ML'(D) is already pretty complicated and we don't want to have yet 
+		 * another partial derivative ML''(D) is simply computed via the difference
+		 * quotient (slope):
+		 *
+		 *  ML''(D_n) ≃ (ML'(D_n) - ML'(D_{n-1})) / (D_n - D_{n-1})
+		 *
+		 * Variable Names:
+		 *  D_curr = D_n
+		 *  D_prev = D_{n-1}
+		 *  ML'(D_n) = dML_curr
+		 *  ML'(D_{n-1}) = dML_prev
+		 *
+		 */
+
 		int passes = 0;
-		while (fabs(D_0 - D_1) > 0.0000001 && passes <= 15){
-			float temp = parms[2] - lnL_1 * (D_1 - D_0) / (lnL_1 - lnL_0);
+		while (fabs(D_prev - D_curr) > 0.0000001 && passes <= 15){
+			float slope = (dML_curr - dML_prev) / (D_curr - D_prev);
+			float temp = D_curr - dML_curr / slope;
 
-			lnL_0 = lnL_1;
-			D_0 = D_1;
-			D_1 = parms[2] = temp;
+			dML_prev = dML_curr;
+			D_prev = D_curr;
+			D_curr = parms[2] = temp;
 
-			lnL_1 = 0;
+			dML_curr = 0;
 			setcoef(coef, parms);
 
 			for( auto it: matCounts){
 				float *X = it.second;
-				lnL_1 += F0(parms, X, coef) * X[24];
+				dML_curr += F0(parms, X, coef) * X[24];
 			}
 
 			passes++;
@@ -288,7 +310,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 			cerr << "Failure to converge\n";
 		}
 
-		cout << "D=" << D << ", Delta=" << D_1 << ", Pi=" << pi << ", Epsilon=" << eps << endl;
+		cout << "D=" << D << ", Delta=" << D_curr << ", Pi=" << pi << ", Epsilon=" << eps << endl;
 		matCounts.clear();
 	}
 }
