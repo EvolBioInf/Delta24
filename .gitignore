@@ -17,4 +17,6 @@ transcript.sh
 true-align.sam
 true-test.txt
 *.o
+Delta24.sublime-*
+lib/*
 
