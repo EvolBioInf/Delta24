@@ -12,5 +12,5 @@ To build simply do
 
 If the appropiate tools are installed, tests are available via
 
-`	$ make test 
+	$ make test 
 
