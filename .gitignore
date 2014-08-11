@@ -19,4 +19,5 @@ true-test.txt
 *.o
 Delta24.sublime-*
 lib/*
+*.ebwt
 
