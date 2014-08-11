@@ -18,7 +18,7 @@
 echo COMMENT Simulate diploid genome
 ms 2 1 -t 10000 -r 500 100000 | ms2dna > template.fasta
 echo COMMENT Simulate genome sequencing
-sequencer -a -c 10 -E 0.001 -P template.fasta | sed 's/ f.+$//' > reads.fasta
+sequencer -a -c 10 -E 0.001 -P template.fasta | sed -r 's/ f.+$//' > reads.fasta
 getSeq -s mate=1 reads.fasta > mate1.fasta
 getSeq -s mate=2 reads.fasta > mate2.fasta
 echo COMMENT Map reads using bowtie
