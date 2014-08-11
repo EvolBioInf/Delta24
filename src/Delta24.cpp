@@ -187,6 +187,11 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	auto matCounts = matHash();
 	mappedReads_t* foobar = bam24(filename);
 
+	if( foobar == NULL){
+		cerr << "could't read file: " << filename << endl;
+		exit(1);
+	}
+
 	make_four_count( matCounts, foobar->begin(), foobar->end() );
 
 	R[0] = 100;
