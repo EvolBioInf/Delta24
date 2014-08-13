@@ -174,6 +174,24 @@ void setcoef(float *coef, float *parms){
 	coef[14]=(-pow(parms[0],2)+parms[0]);
 }
 
+void setcoef(float *coef, float pi, float eps, float delta){
+	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
+	coef[1]=log(0.333333333333333*eps*(-eps + 1));
+	coef[2]=log(0.0555555555555556*pow(eps,2) + 0.166666666666667*eps*(-eps + 1));
+	coef[3]=log(0.111111111111111*pow(eps,2) );
+	coef[4]=log(pow((-eps + 1),2));
+	coef[5]=log(0.166666666666667*eps*(-eps + 1) + 0.5*pow((-eps + 1),2));
+	coef[6]=log(0.0555555555555556*pow(eps, 2) + 0.5*pow(1-eps, 2));
+	coef[7]=log(-0.333333333333333*eps + 0.5);
+	coef[8]=log(0.333333333333333*eps);
+	coef[9]=log(-eps + 1);
+	coef[10]=pow(1-pi,2)+delta*(1-pi)*pi;
+	coef[11]=2*(1-delta)*(1-pi)*pi;
+	coef[12]=pow(pi,2)+delta*(1-pi)*pi;
+	coef[13]=(-2*pow(pi,2)+2*pi);
+	coef[14]=(-pow(pi,2)+pi);
+}
+
 void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	float parms[4] = {0.01, 0.01, 0.0, 0.0};
 	float coef[15] = {0};
@@ -253,9 +271,12 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 		float dML_prev = 0;
 		float dML_curr = 0;
-		float D_curr = pi;
+		float &D_curr = parms[2];
 		float D_prev = pi;
 
+		D_curr = pi;
+
+		//setcoef( coef, pi, eps, D_curr);
 		setcoef(coef, parms);
 		
 		vector<dml_s> partial;
@@ -264,12 +285,14 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 			partial.push_back(dml_init(parms, i->second, coef ));
 		}
 
+		matCounts.clear();
+		delete ref;
+
 		for( const auto &it: partial){
 			dML_prev += dml_comp(it, coef);
 		}
 
 		D_curr = D_prev / 2;
-		parms[2] = D_curr;
 		setcoef(coef, parms);
 
 		for( auto it: partial){
@@ -306,7 +329,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 			dML_prev = dML_curr;
 			D_prev = D_curr;
-			D_curr = parms[2] = temp;
+			D_curr = temp;
 
 			dML_curr = 0;
 			setcoef(coef, parms);
@@ -323,11 +346,9 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 		}
 
 		cout << "D=" << D << ", Delta=" << D_curr << ", Pi=" << pi << ", Epsilon=" << eps << endl;
-		matCounts.clear();
-		delete ref;
 	}
 
-	//delete foobar;
+	delete foobar;
 }
 
 int main (int argc, char**argv){
