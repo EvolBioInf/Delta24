@@ -30,7 +30,7 @@ mappedReads_t* bam24( char * filename){
 	SamHeaderRecord *header_record = header.getNextSQRecord();
 	size_t length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = new mappedReads_t(length, std::list<seqNuc_t>());
+	auto ret = new mappedReads_t(length, mappedReads_t::value_type());
 
 	SamRecord record, next_record;
 
