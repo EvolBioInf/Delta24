@@ -39,8 +39,8 @@ mappedReads_t* bam24( char * filename){
 	while( file.ReadRecord(header, record)){
 		size_t seqID = counter++;
 
-		size_t start = record.get0BasedPosition();
-		size_t length = record.getReadLength();
+		ssize_t start = record.get0BasedPosition();
+		ssize_t length = record.getReadLength();
 
 		// Our simulations does not contain paired and reads. So the following
 		// code is not yet checked for correctness.
@@ -65,13 +65,15 @@ mappedReads_t* bam24( char * filename){
 			}
 		} */
 
+		if( start < 0 || length < 0 ) continue;
+
 		// iterate over the read.
-		for( size_t i = 0; i < length; i++){
-			int pos_in_ref = i + start;//record.getCigarInfo()->getRefPosition(i, start);
+		for( ssize_t i = 0; i < length; i++){
+			int pos_in_ref = record.getCigarInfo()->getRefPosition(i, start);
 
 			// add the current nucleotide to the map.
 			seqNuc_t p = make_pair(seqID, record.getSequence(i));
-			(*ret)[pos_in_ref].push_back(p);
+			(*ret)[pos_in_ref].push_front(p);
 		}
 	}
 
