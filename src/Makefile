@@ -14,7 +14,7 @@ prof: clean Delta24
 	gprof Delta24 > profile
 
 .PHONY: debug
-debug: CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -O0 -fstack-protector-all
+debug: CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -Og -fstack-protector-all
 debug: Delta24
 
 clean:
