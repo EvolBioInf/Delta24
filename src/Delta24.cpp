@@ -156,24 +156,6 @@ void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator be
 	}
 }
 
-void setcoef(float *coef, float *parms){
-	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
-	coef[1]=log(0.333333333333333*parms[1]*(-parms[1] + 1));
-	coef[2]=log(0.0555555555555556*pow(parms[1],2) + 0.166666666666667*parms[1]*(-parms[1] + 1));
-	coef[3]=log(0.111111111111111*pow(parms[1],2) );
-	coef[4]=log(pow((-parms[1] + 1),2));
-	coef[5]=log(0.166666666666667*parms[1]*(-parms[1] + 1) + 0.5*pow((-parms[1] + 1),2));
-	coef[6]=log(0.0555555555555556*pow(parms[1], 2) + 0.5*pow(1-parms[1], 2));
-	coef[7]=log(-0.333333333333333*parms[1] + 0.5);
-	coef[8]=log(0.333333333333333*parms[1]);
-	coef[9]=log(-parms[1] + 1);
-	coef[10]=pow(1-parms[0],2)+parms[2]*(1-parms[0])*parms[0];
-	coef[11]=2*(1-parms[2])*(1-parms[0])*parms[0];
-	coef[12]=pow(parms[0],2)+parms[2]*(1-parms[0])*parms[0];
-	coef[13]=(-2*pow(parms[0],2)+2*parms[0]);
-	coef[14]=(-pow(parms[0],2)+parms[0]);
-}
-
 void setcoef(float *coef, float pi, float eps, float delta){
 	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
 	coef[1]=log(0.333333333333333*eps*(-eps + 1));
@@ -217,7 +199,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 	
 	// some loop
 	while ( (fabsf(R[0])+fabsf(R[1]) > 0.00001f )|| isnan(R[0]) || isnan(R[1]) ){
-		setcoef(coef, parms);
+		setcoef(coef, pi, eps, 0.0);
 		float iJ[2][2], J[2][2];
 
 		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
@@ -276,8 +258,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 		D_curr = pi;
 
-		//setcoef( coef, pi, eps, D_curr);
-		setcoef(coef, parms);
+		setcoef( coef, pi, eps, D_curr);
 		
 		vector<dml_s> partial;
 
@@ -293,7 +274,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 		}
 
 		D_curr = D_prev / 2;
-		setcoef(coef, parms);
+		setcoef( coef, pi, eps, D_curr);
 
 		for( auto it: partial){
 			dML_curr += dml_comp(it, coef);
@@ -332,7 +313,7 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 			D_curr = temp;
 
 			dML_curr = 0;
-			setcoef(coef, parms);
+			setcoef( coef, pi, eps, D_curr);
 
 			for( auto it: partial){
 				dML_curr += dml_comp(it, coef);
