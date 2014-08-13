@@ -15,8 +15,10 @@
 # length of our alignment. I merge the two alignments by
 # (i) removing the @SQ header for S2
 # (ii) replacing the template label S2 by S1
+LENGTH=100000
+echo "Reference length: " $LENGTH
 echo COMMENT Simulate diploid genome
-ms 2 1 -t 10000 -r 500 100000 | ms2dna > template.fasta
+ms 2 1 -t $(( LENGTH / 10 )) -r $(( LENGTH / 200 )) $LENGTH | ms2dna > template.fasta
 echo COMMENT Simulate genome sequencing
 sequencer -a -c 10 -E 0.001 -P template.fasta > reads.fasta
 getSeq -s mate=1 reads.fasta | sed -r 's/ f.+$//' > mate1.fasta
