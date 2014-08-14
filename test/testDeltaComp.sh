@@ -42,9 +42,9 @@ echo COMMENT Run Delta24
 echo Distance   Delta
 ../src/Delta24 test2.bam 1 6 1 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}' | tee delta24.out
 
-mv -b delta.out delta.out.bak
-mv -b mlrho.out mlrho.out.bak
-mv -b delta24.out delta24.out.bak
+mv delta.out delta.out.bak
+mv mlrho.out mlrho.out.bak
+mv delta24.out delta24.out.bak
 
 cut -f 2 delta.out.bak > delta.out
 cut -f 2 mlrho.out.bak > mlrho.out
