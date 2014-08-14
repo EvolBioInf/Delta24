@@ -14,7 +14,8 @@ sequencer -a -c 10 -E 0.001 -P template.fasta > reads.fasta
 getSeq -s mate=1 reads.fasta > mate1.fasta
 getSeq -s mate=2 reads.fasta > mate2.fasta
 echo COMMENT Run delta
-delta -d 1 -D 5 template.fasta | cut -f 1,6
+echo Distance   Delta
+delta -d 1 -D 5 template.fasta | cut -f 1,6 | tail -n+2 | tee delta.out
 echo COMMENT Extract haploid template
 getSeq -s S1 template.fasta > t.fasta
 mv t.fasta template.fasta
@@ -36,7 +37,21 @@ awk -f bam2pro.awk |
 formatPro > /dev/null
 echo COMMENT Run mlRho
 echo Distance   Delta
-mlRho -M 0 -m 1 -M 5  | grep '^[1-9]' | awk '{print $1 "\t" $4}' | perl -pe 's/</\t/g' | awk '{print $1 "\t" $3}'
+mlRho -M 0 -m 1 -M 5  | grep '^[1-9]' | awk '{print $1 "\t" $4}' | perl -pe 's/</\t/g' | awk '{print $1 "\t" $3}' | tee mlrho.out
 echo COMMENT Run Delta24
 echo Distance   Delta
-../src/Delta24 test2.bam 1 6 1 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}'
+../src/Delta24 test2.bam 1 6 1 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}' | tee delta24.out
+
+mv -b delta.out delta.out.bak
+mv -b mlrho.out mlrho.out.bak
+mv -b delta24.out delta24.out.bak
+
+cut -f 2 delta.out.bak > delta.out
+cut -f 2 mlrho.out.bak > mlrho.out
+cut -f 2 delta24.out.bak > delta24.out
+
+echo Mean Delta24 Error
+paste -d ' ' delta24.out delta.out | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {avg+=abs($1-$2)}END{print avg/NR}'
+
+echo Mean mlRho Error
+paste -d ' ' mlrho.out delta.out | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {avg+=abs($1-$2)}END{print avg/NR}'
