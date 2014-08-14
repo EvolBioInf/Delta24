@@ -20,4 +20,5 @@ true-test.txt
 Delta24.sublime-*
 lib/*
 *.ebwt
+template*
 
