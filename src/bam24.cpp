@@ -1,4 +1,3 @@
-#include "bam24.hpp"
 #include <iostream>
 #include <tuple>
 #include <vector>
@@ -7,6 +6,12 @@
 #include "SamFile.h"
 #include "SamFlag.h"
 #include "SamValidation.h"
+
+#include <string.h>
+
+#include <assert.h>
+
+#include "bam24.hpp"
 
 using namespace std;
 
@@ -28,9 +33,9 @@ mappedReads_t* bam24( char * filename){
 
 	// Get the Reference Sequence (SQ)
 	SamHeaderRecord *header_record = header.getNextSQRecord();
-	size_t length = atoi(header_record->getTagValue("LN"));
+	size_t ref_length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = new mappedReads_t(length, mappedReads_t::value_type());
+	auto ret = new mappedReads_t(ref_length, mappedReads_t::value_type());
 
 	SamRecord record, next_record;
 
@@ -65,11 +70,15 @@ mappedReads_t* bam24( char * filename){
 			}
 		} */
 
-		if( start < 0 || length < 0 ) continue;
+		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ) continue;
 
 		// iterate over the read.
 		for( ssize_t i = 0; i < length; i++){
 			int pos_in_ref = record.getCigarInfo()->getRefPosition(i, start);
+
+			if( pos_in_ref < 0 || pos_in_ref >= ref_length){
+				continue;
+			}
 
 			// add the current nucleotide to the map.
 			seqNuc_t p = make_pair(seqID, record.getSequence(i));
