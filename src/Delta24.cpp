@@ -306,8 +306,8 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 		int passes = 0;
 		while (fabs(D_prev - D_curr) > 0.0000001 && passes <= 15){
-			float slope = (dML_curr - dML_prev) / (D_curr - D_prev);
-			float temp = D_curr - dML_curr / slope;
+			double slope = (dML_curr - dML_prev) / (D_curr - D_prev);
+			double temp = D_curr - dML_curr / slope;
 
 			dML_prev = dML_curr;
 			D_prev = D_curr;
