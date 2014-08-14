@@ -224,9 +224,10 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 		iJ[1][0] =-1/detJ * J[1][0];
 		iJ[1][1] = 1/detJ * J[0][0];
 
-		// FIXME: Is it just me, or do the following lines look like a bug?
-		R[0] = R[0] * iJ[0][0] + R[1] * iJ[0][1];
-		R[1] = R[0] * iJ[1][0] + R[1] * iJ[1][1];
+		// R_ = R*iJ
+		auto oldR0 = R[0];
+		R[0] = oldR0 * iJ[0][0] + R[1] * iJ[0][1];
+		R[1] = oldR0 * iJ[1][0] + R[1] * iJ[1][1];
 
 		if( pi > R[0]) {
 			pi-= R[0];
