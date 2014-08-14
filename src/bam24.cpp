@@ -33,7 +33,7 @@ mappedReads_t* bam24( char * filename){
 
 	// Get the Reference Sequence (SQ)
 	SamHeaderRecord *header_record = header.getNextSQRecord();
-	size_t ref_length = atoi(header_record->getTagValue("LN"));
+	ssize_t ref_length = atoi(header_record->getTagValue("LN"));
 
 	auto ret = new mappedReads_t(ref_length, mappedReads_t::value_type());
 
