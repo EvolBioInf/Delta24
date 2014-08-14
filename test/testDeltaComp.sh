@@ -5,7 +5,7 @@
 # test than that based on makedata.py.
 # Date: August 7, 2014
 # Author: Bernhard Haubold
-LENGTH=100000
+LENGTH=1000000
 echo "Reference length: " $LENGTH
 echo COMMENT Simulate diploid genome
 ms 2 1 -p 10 -t $(( LENGTH / 100 )) -r $(( LENGTH / 200 )) $LENGTH | ms2dna > template.fasta
@@ -20,7 +20,7 @@ getSeq -s S1 template.fasta > t.fasta
 mv t.fasta template.fasta
 echo COMMENT Map reads to haploid template using bowtie2
 bowtie2-build --quiet template.fasta template 
-bowtie2 -x template -p 4 -X 750 -f -S true-align.sam -1 mate1.fasta -2 mate2.fasta
+bowtie2 -x template -p 4 -X 750 -f -S true-align.sam -1 mate1.fasta -2 mate2.fasta 2> /dev/null
 
 #remove broken records
 grep -v '\*' true-align.sam > true-align-clean.sam
