@@ -329,7 +329,11 @@ void compute( char* filename, size_t start, size_t stop ){
 			cerr << "Failure to converge\n";
 		}
 
-		cout << "D=" << D << ", Delta=" << D_curr << ", Pi=" << pi << ", Epsilon=" << eps << endl;
+		delta[D-start] = D_curr;
+	}
+
+	for( int i=0; i<( stop-start ); i++){
+		cout << "D=" << i+start << " Delta=" << delta[i] << endl;
 	}
 
 	delete foobar;
