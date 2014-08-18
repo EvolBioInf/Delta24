@@ -174,7 +174,7 @@ void setcoef(float *coef, float pi, float eps, float delta){
 	coef[14]=(-pow(pi,2)+pi);
 }
 
-void compute( char* filename, size_t start, size_t stop, size_t inc ){
+void compute( char* filename, size_t start, size_t stop ){
 	float parms[4] = {0.01, 0.01, 0.0, 0.0};
 	float coef[15] = {0};
 	float R[2];
@@ -247,8 +247,10 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 	matCounts.clear();
 
+	std::vector<double> delta( stop - start );
+
 	#pragma omp parallel for
-	for (size_t D = start; D < stop; D += inc){
+	for (size_t D = start; D < stop; D++){
 		auto ref = make_sorted_count ( D, foobar->begin(), foobar->end());
 		auto matCounts = *ref;
 
@@ -335,16 +337,14 @@ void compute( char* filename, size_t start, size_t stop, size_t inc ){
 
 int main (int argc, char**argv){
 
-	if( argc != 5 ){
-		printf("usage: %s <bam file> <start distance> <stop distance> <increment>\n", argv[0]);
+	if( argc < 4 ){
+		printf("usage: %s <bam file> <start distance> <stop distance> \n", argv[0]);
 		exit(0);
 	}
 
 	size_t start = atoi(argv[2]);
 	size_t stop  = atoi(argv[3]);
-	size_t inc   = atoi(argv[4]);
+	printf("bam file:%s start distance:%lu stop distance:%lu \n", argv[1], start, stop);
 
-	printf("bam file:%s start distance:%lu stop distance:%lu increment:%lu\n", argv[1], start, stop, inc);
-
-	compute(argv[1], start, stop, inc);	
+	compute(argv[1], start, stop);
 }
