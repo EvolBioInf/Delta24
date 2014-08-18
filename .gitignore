@@ -21,4 +21,6 @@ Delta24.sublime-*
 lib/*
 *.ebwt
 template*
+*.out
+*.out.bak
 
