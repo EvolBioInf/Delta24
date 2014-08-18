@@ -27,7 +27,8 @@ mappedReads_t* bam24( char * filename){
 	SamFile file(ErrorHandler::RETURN);
 	SamFileHeader header;
 
-	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ){
+	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ||
+		!file.ReadBamIndex() ){
 		return NULL;
 	}
 
@@ -47,7 +48,7 @@ mappedReads_t* bam24( char * filename){
 		ssize_t start = record.get0BasedPosition();
 		ssize_t length = record.getReadLength();
 
-		// Our simulations does not contain paired and reads. So the following
+		// Our simulations does not contain paired end reads. So the following
 		// code is not yet checked for correctness.
 		/* if( SamFlag::isProperPair( record.getFlag())){
 			file.ReadRecord( header, next_record);
