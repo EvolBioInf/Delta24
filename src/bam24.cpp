@@ -82,8 +82,9 @@ mappedReads_t* bam24( char * filename){
 			}
 
 			// add the current nucleotide to the map.
-			seqNuc_t p = make_pair(seqID, record.getSequence(i));
-			(*ret)[pos_in_ref].push_front(p);
+			Nucl p(seqID, record.getSequence(i));
+
+			(*ret)[pos_in_ref].push_back(p);
 		}
 	}
 

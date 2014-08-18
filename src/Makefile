@@ -4,7 +4,7 @@ LDFLAGS= -L $(STATGENDIR)
 
 CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -O3 -fstack-protector-all -fopenmp
 
-Delta24: Delta24.o matHash.o bam24.o dml.o
+Delta24: Delta24.o matHash.o bam24.o dml.o nucl.o
 	$(CXX) $^ $(CXXFLAGS) -o Delta24
 
 .PHONY: prof

@@ -76,11 +76,11 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 		iota( sortB.begin(), sortB.end(), 0);
 
 		for( const auto& it: *I ){
-			countA[char2uint(it.second)]++;
+			countA[ it.getCode() ]++;
 		}
 
 		for( const auto& it: *J ){
-			countB[char2uint(it.second)]++;
+			countB[ it.getCode() ]++;
 		}
 
 		/* For a reason I dont know yet, we need to sort the nucleotides by frequency.
@@ -105,14 +105,14 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 
 		// I dont know, what these next lines are for.
 		while( ii != ie && ji != je ){
-			if( ii->first < ji->first ){
-				count[sortA[ char2uint(ii->second) ] ]++;
+			if( ii->getSeqID() < ji->getSeqID() ){
+				count[sortA[ ii->getCode() ] ]++;
 				++ii;
-			} else if ( ii->first > ji->first ){
-				count[sortB[ char2uint(ji->second)] + 4]++;
+			} else if ( ii->getSeqID() > ji->getSeqID() ){
+				count[sortB[ ji->getCode() ] + 4]++;
 				++ji;
 			} else {
-				size_t offset = sortB[char2uint(ji->second)] + sortA[char2uint(ii->second)] * 4;
+				size_t offset = sortB[ ji->getCode() ] + sortA[ii->getCode()] * 4;
 				count[8 + offset]++;
 				++ii;
 				++ji;
@@ -120,11 +120,11 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 		}
 
 		for(; ii != ie; ++ii){
-			count[ sortA[char2uint(ii->second)]]++;
+			count[ sortA[ ii->getCode() ]]++;
 		}
 
 		for(; ji != je; ++ji){
-			count[ sortB[char2uint(ji->second)] + 4]++;
+			count[ sortB[ ji->getCode() ] + 4]++;
 		}
 
 		matCounts->inc(count);
@@ -149,7 +149,7 @@ void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator be
 		// Count the number of mapped reads at this position.
 		//for( auto j = i->begin(); j != i->end(); ++j){
 		for( auto j: *i){
-			count[ char2uint(j.second) ]++;
+			count[ j.getCode() ]++;
 		}
 
 		matCounts.inc(count);
