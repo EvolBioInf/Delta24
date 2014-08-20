@@ -9,7 +9,7 @@ class Nucl {
 private:
 	size_t data;
 public:
-	Nucl(size_t seqID, char n);
+	Nucl(size_t readID, char n);
 	Nucl();
 	static size_t char2code( char c);
 	static char code2char( size_t d);
@@ -20,7 +20,7 @@ public:
 		return data & 0x3UL;
 	}
 
-	size_t getSeqID() const {
+	size_t getReadID() const {
 		return data & (~0UL ^ 0x3UL);
 	}
 };

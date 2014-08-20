@@ -25,16 +25,16 @@ char Nucl::code2char( std::size_t d){
 	return c;
 }
 
-Nucl::Nucl(size_t seqID, char c): data(seqID<<2) {
+Nucl::Nucl(size_t readID, char c): data(readID<<2) {
 	data |= char2code(c);
 }
 
 Nucl::Nucl(): data(0){};
 
 bool Nucl::operator< (const Nucl& b) const {
-	return getSeqID() < b.getSeqID();
+	return getReadID() < b.getReadID();
 }
 
 bool Nucl::operator> (const Nucl& b) const {
-	return getSeqID() > b.getSeqID();
+	return getReadID() > b.getReadID();
 }

@@ -119,10 +119,10 @@ map_t make_sorted_count ( size_t distance, const mappedReads_t::const_iterator b
 
 		// I dont know, what these next lines are for.
 		while( ii != ie && ji != je ){
-			if( ii->getSeqID() < ji->getSeqID() ){
+			if( ii->getReadID() < ji->getReadID() ){
 				count[sortA[ ii->getCode() ] ]++;
 				++ii;
-			} else if ( ii->getSeqID() > ji->getSeqID() ){
+			} else if ( ii->getReadID() > ji->getReadID() ){
 				count[sortB[ ji->getCode() ] + 4]++;
 				++ji;
 			} else {
