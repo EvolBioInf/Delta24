@@ -13,7 +13,7 @@
 
 #include <assert.h>
 
-#include "bam24.hpp"
+#include "mapNucl.hpp"
 
 using namespace std;
 
@@ -25,20 +25,20 @@ using namespace std;
  * sequence. At each position there is a list of all read which have
  * a nucleotide mapping to that position.
  */
-mappedReads_t bam24( char * filename){
+mapped_nucl_t mapNucl( const char * filename){
 	SamFile file(ErrorHandler::RETURN);
 	SamFileHeader header;
 
 	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ||
 		!file.ReadBamIndex() ){
-		throw "gnarf";
+		throw "Failed to open input file.";
 	}
 
 	// Get the Reference Sequence (SQ)
 	SamHeaderRecord *header_record = header.getNextSQRecord();
 	ssize_t ref_length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = mappedReads_t(ref_length, mappedReads_t::value_type());
+	mapped_nucl_t ret { static_cast<size_t>(ref_length), mapped_nucl_t::value_type()};
 
 	SamRecord record, next_record;
 

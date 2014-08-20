@@ -26,13 +26,14 @@
 #include <unistd.h>
 #include <sys/sysinfo.h> 
 
-#include "bam24.hpp"
+#include "mapNucl.hpp"
 #include "dml.hpp"
 
 using namespace std;
 
 // use count_t instead of uint, so we might be able to switch types in a future version
 typedef int count_t;
+typedef array<count_t, 24> count_24mer_t;
 
 /* uncomment for unordered hash map */
 
@@ -53,26 +54,27 @@ struct matHashFn {
 	}
 };
 
-typedef unordered_map< array<count_t, 24>, count_t, matHashFn> map_t;
 
-void inc( map_t& map, const array<count_t, 24>& key ){
-	auto elem = map.find(key);
+typedef unordered_map< count_24mer_t, count_t, matHashFn> count_map_t;
+
+void inc( count_map_t& map, const array<count_t, 24>& key ){
+	auto elem (map.find(key));
 	if( elem != map.end()){
 		elem->second++;
 	} else {
-		map.insert(map_t::value_type(key,1));
+		map.insert(count_map_t::value_type(key,1));
 	}
 }
 
 /**
  * This function does some sorting and counting.
  */
-map_t make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
+count_map_t make_sorted_count ( size_t distance, const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end){
 
-	map_t matCounts{};
+	count_map_t countMap{};
 
-	mappedReads_t::const_iterator I = begin;
-	mappedReads_t::const_iterator J = begin;
+	mapped_nucl_t::const_iterator I = begin;
+	mapped_nucl_t::const_iterator J = begin;
 	advance(J, distance);
 
 	// Iterate over all positions, with `I` and `J` being `distance` positions apart.
@@ -141,15 +143,15 @@ map_t make_sorted_count ( size_t distance, const mappedReads_t::const_iterator b
 			count[ sortB[ ji->getCode() ] + 4]++;
 		}
 
-		inc( matCounts, count);
+		inc( countMap, count);
 	}
 
-	return matCounts;
+	return countMap;
 }
 
-map_t make_four_count ( const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
+count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end ){
 	
-	map_t matCounts{};
+	count_map_t countMap{};
 
 	// Iterate over all elements.
 	for (auto i = begin; i != end; ++i){
@@ -158,7 +160,7 @@ map_t make_four_count ( const mappedReads_t::const_iterator begin, const mappedR
 		count.fill(0);
 
 		if( i->empty() == true ) {
-			inc( matCounts, count);
+			inc( countMap, count);
 			continue;
 		}
 
@@ -167,10 +169,10 @@ map_t make_four_count ( const mappedReads_t::const_iterator begin, const mappedR
 			count[ j.getCode() ]++;
 		}
 
-		inc( matCounts, count);
+		inc( countMap, count);
 	}
 
-	return matCounts;
+	return countMap;
 }
 
 void setcoef(double *coef, double pi, double eps, double delta){
@@ -191,14 +193,14 @@ void setcoef(double *coef, double pi, double eps, double delta){
 	coef[14]=(-pow(pi,2)+pi);
 }
 
-pair<double,double> compute_pi_eps ( const mappedReads_t& map){
+pair<double,double> compute_pi_eps ( const mapped_nucl_t& mappedNucls){
 	double parms[4] = {0.01, 0.01, 0.0, 0.0};
 	double coef[15] = {0};
 	double R[2] = { 100, 100};
 	double &pi = parms[0];
 	double &eps = parms[1];
 
-	auto matCounts = make_four_count( map.begin(), map.end() );
+	auto countMap = make_four_count( mappedNucls.begin(), mappedNucls.end() );
 
 	// some loop
 	while ( (fabs(R[0])+fabs(R[1]) > 0.00001f )|| std::isnan(R[0]) || std::isnan(R[1]) ){
@@ -208,7 +210,7 @@ pair<double,double> compute_pi_eps ( const mappedReads_t& map){
 		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
 		R[0] = R[1] = 0.0;
 
-		for( auto it : matCounts){
+		for( auto it : countMap){
 			double X[25];
 			for(int i=0;i<24;i++){
 				X[i] = static_cast<double>(it.first[i]);
@@ -250,16 +252,16 @@ pair<double,double> compute_pi_eps ( const mappedReads_t& map){
 
 	cout << "Pi=" << pi << ", Epsilon=" << eps << endl;
 
-	matCounts.clear();
+	countMap.clear();
 
 	return {pi,eps};
 }
 
-void compute( char* filename, size_t start, size_t stop ){
+void compute( const char* filename, size_t start, size_t stop ){
 
-	mappedReads_t foobar = bam24(filename);
+	mapped_nucl_t mappedNucls = mapNucl(filename);
 
-	auto pieps = compute_pi_eps(foobar);
+	auto pieps = compute_pi_eps(mappedNucls);
 	double pi = pieps.first;
 	double eps = pieps.second;
 
@@ -269,7 +271,7 @@ void compute( char* filename, size_t start, size_t stop ){
 
 	#pragma omp parallel for
 	for (size_t D = start; D <= stop; D++){
-		map_t matCounts = make_sorted_count( D, foobar.begin(), foobar.end());
+		count_map_t countMap = make_sorted_count( D, mappedNucls.begin(), mappedNucls.end());
 
 		double parms[4] = {pi, eps, 0.01, 0.0};
 		double dML_prev = 0;
@@ -283,11 +285,11 @@ void compute( char* filename, size_t start, size_t stop ){
 		
 		vector<dml_s> partial;
 
-		for (auto i = matCounts.begin(); i != matCounts.end(); ++i){
+		for (auto i = countMap.begin(); i != countMap.end(); ++i){
 			partial.push_back(dml_init(parms, i->first, i->second, coef ));
 		}
 
-		matCounts.clear();
+		countMap.clear();
 
 		for( const auto &it: partial){
 			dML_prev += dml_comp(it, coef);
