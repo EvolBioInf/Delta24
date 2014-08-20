@@ -3,18 +3,26 @@
 
 #include <vector>
 
+using std::size_t;
+
 class Nucl {
 private:
-	std::size_t data;
+	size_t data;
 public:
-	Nucl(std::size_t seqID, char n);
+	Nucl(size_t seqID, char n);
 	Nucl();
-	static std::size_t char2code( char c);
-	static char code2char( std::size_t d);
-	std::size_t getCode() const;
-	std::size_t getSeqID() const;
+	static size_t char2code( char c);
+	static char code2char( size_t d);
 	bool operator< (const Nucl&) const;
 	bool operator> (const Nucl&) const;
+
+	size_t getCode() const{
+		return data & 0x3UL;
+	}
+
+	size_t getSeqID() const {
+		return data & (~0UL ^ 0x3UL);
+	}
 };
 
 #endif // _NUCL_HPP_

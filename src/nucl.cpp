@@ -25,14 +25,6 @@ char Nucl::code2char( std::size_t d){
 	return c;
 }
 
-size_t Nucl::getCode() const{
-	return data & 0x3UL;
-}
-
-size_t Nucl::getSeqID() const {
-	return data & (~0UL ^ 0x3UL);
-}
-
 Nucl::Nucl(size_t seqID, char c): data(seqID<<2) {
 	data |= char2code(c);
 }
