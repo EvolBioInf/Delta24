@@ -337,7 +337,7 @@ void compute( char* filename, size_t start, size_t stop ){
 			passes++;
 		}
 
-		if (passes > 15){
+		if (passes > 15 || D_curr < -1.0 || D_curr > 1.0){
 			//cerr << "Failure to converge\n";
 			delta[D-start] = -42.0;
 		} else {
