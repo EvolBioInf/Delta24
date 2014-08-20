@@ -67,20 +67,6 @@ void inc( map_t& map, const array<count_t, 24>& key ){
 }
 
 /**
- * @brief Maps nucleotides to a two bit code.
- */
-inline static count_t char2uint( const char& c){
-	count_t ret = 0;
-	switch( c){
-		case 'A': ret = 0; break;
-		case 'C': ret = 1; break;
-		case 'G': ret = 2; break;
-		case 'T': ret = 3; break;
-	}
-	return ret;
-}
-
-/**
  * This function does some sorting and counting.
  */
 map_t make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
