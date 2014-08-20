@@ -185,14 +185,14 @@ void compute( char* filename, size_t start, size_t stop ){
 	cout << "Starting main loop.\n";
 
 	auto matCounts = matHash();
-	mappedReads_t* foobar = bam24(filename);
+	mappedReads_t foobar = bam24(filename);
 
-	if( foobar == NULL){
+	/* if( foobar == NULL){
 		cerr << "could't read file: " << filename << endl;
 		exit(1);
-	}
+	} */
 
-	make_four_count( matCounts, foobar->begin(), foobar->end() );
+	make_four_count( matCounts, foobar.begin(), foobar.end() );
 
 	R[0] = 100;
 	R[1] = 100;
@@ -251,7 +251,7 @@ void compute( char* filename, size_t start, size_t stop ){
 
 	#pragma omp parallel for
 	for (size_t D = start; D < stop; D++){
-		auto ref = make_sorted_count ( D, foobar->begin(), foobar->end());
+		auto ref = make_sorted_count ( D, foobar.begin(), foobar.end());
 		auto matCounts = *ref;
 
 		float dML_prev = 0;
@@ -335,8 +335,6 @@ void compute( char* filename, size_t start, size_t stop ){
 	for( int i=0; i<( stop-start ); i++){
 		cout << "D=" << i+start << " Delta=" << delta[i] << endl;
 	}
-
-	delete foobar;
 }
 
 int main (int argc, char**argv){

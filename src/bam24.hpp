@@ -9,6 +9,6 @@
 
 typedef std::vector<std::vector<Nucl>> mappedReads_t;
 
-mappedReads_t* bam24( char * filename);
+mappedReads_t bam24( char * filename);
 
 #endif

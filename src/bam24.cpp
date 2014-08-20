@@ -23,20 +23,20 @@ using namespace std;
  * sequence. At each position there is a list of all read which have
  * a nucleotide mapping to that position.
  */
-mappedReads_t* bam24( char * filename){
+mappedReads_t bam24( char * filename){
 	SamFile file(ErrorHandler::RETURN);
 	SamFileHeader header;
 
 	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ||
 		!file.ReadBamIndex() ){
-		return NULL;
+		throw "gnarf";
 	}
 
 	// Get the Reference Sequence (SQ)
 	SamHeaderRecord *header_record = header.getNextSQRecord();
 	ssize_t ref_length = atoi(header_record->getTagValue("LN"));
 
-	auto ret = new mappedReads_t(ref_length, mappedReads_t::value_type());
+	auto ret = mappedReads_t(ref_length, mappedReads_t::value_type());
 
 	SamRecord record, next_record;
 
@@ -84,7 +84,7 @@ mappedReads_t* bam24( char * filename){
 			// add the current nucleotide to the map.
 			Nucl p(seqID, record.getSequence(i));
 
-			(*ret)[pos_in_ref].push_back(p);
+			ret[pos_in_ref].push_back(p);
 		}
 	}
 
