@@ -11,8 +11,6 @@
 #include <fstream>
 #include <string>
 
-#include <cmath>
-#include <math.h>
 #include <algorithm>
 #include <numeric>
 
@@ -175,7 +173,7 @@ map_t make_four_count ( const mappedReads_t::const_iterator begin, const mappedR
 	return matCounts;
 }
 
-void setcoef(float *coef, float pi, float eps, float delta){
+void setcoef(double *coef, double pi, double eps, double delta){
 	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
 	coef[1]=log(0.333333333333333*eps*(-eps + 1));
 	coef[2]=log(0.0555555555555556*pow(eps,2) + 0.166666666666667*eps*(-eps + 1));
@@ -194,11 +192,11 @@ void setcoef(float *coef, float pi, float eps, float delta){
 }
 
 void compute( char* filename, size_t start, size_t stop ){
-	float parms[4] = {0.01, 0.01, 0.0, 0.0};
-	float coef[15] = {0};
-	float R[2];
-	float &pi = parms[0];
-	float &eps = parms[1];
+	double parms[4] = {0.01, 0.01, 0.0, 0.0};
+	double coef[15] = {0};
+	double R[2];
+	double &pi = parms[0];
+	double &eps = parms[1];
 
 	cout << start << ", " << stop << endl;
 	cout << "Starting main loop.\n";
@@ -211,17 +209,17 @@ void compute( char* filename, size_t start, size_t stop ){
 	R[1] = 100;
 	
 	// some loop
-	while ( (fabsf(R[0])+fabsf(R[1]) > 0.00001f )|| isnan(R[0]) || isnan(R[1]) ){
+	while ( (fabs(R[0])+fabs(R[1]) > 0.00001f )|| std::isnan(R[0]) || std::isnan(R[1]) ){
 		setcoef(coef, pi, eps, 0.0);
-		float iJ[2][2], J[2][2];
+		double iJ[2][2], J[2][2];
 
 		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
 		R[0] = R[1] = 0.0;
 
 		for( auto it : matCounts){
-			float X[25];
+			double X[25];
 			for(int i=0;i<24;i++){
-				X[i] = static_cast<float>(it.first[i]);
+				X[i] = static_cast<double>(it.first[i]);
 			}
 			int C = it.second;
 			J[0][0] += J00(parms, X, coef) * C;
@@ -269,10 +267,10 @@ void compute( char* filename, size_t start, size_t stop ){
 	for (size_t D = start; D <= stop; D++){
 		map_t matCounts = make_sorted_count( D, foobar.begin(), foobar.end());
 
-		float dML_prev = 0;
-		float dML_curr = 0;
-		float &D_curr = parms[2];
-		float D_prev = pi;
+		double dML_prev = 0;
+		double dML_curr = 0;
+		double &D_curr = parms[2];
+		double D_prev = pi;
 
 		D_curr = pi;
 

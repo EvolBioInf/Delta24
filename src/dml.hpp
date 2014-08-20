@@ -8,8 +8,8 @@ typedef struct {
 	double x;
 } dml_s;
 
-dml_s dml_init(float* parms, float* X, float* coef);
-double dml_comp(dml_s dml, float*coef);
-dml_s dml_init(float* parms, const std::array<int, 24>& X, int count, float* coef);
+dml_s dml_init(double* parms, double* X, double* coef);
+double dml_comp(dml_s dml, double*coef);
+dml_s dml_init(double* parms, const std::array<int, 24>& X, int count, double* coef);
 
 #endif

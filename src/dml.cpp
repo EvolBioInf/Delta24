@@ -3,7 +3,7 @@
 
 using namespace std;
 
-dml_s dml_init(float* parms, float* X, float* coef){
+dml_s dml_init(double* parms, double* X, double* coef){
 
 	dml_s dml;
 
@@ -17,7 +17,7 @@ dml_s dml_init(float* parms, float* X, float* coef){
 	return dml;
 }
 
-dml_s dml_init(float* parms, const array<int, 24>& Y, int count, float* coef){
+dml_s dml_init(double* parms, const array<int, 24>& Y, int count, double* coef){
 
 	double X[24];
 	for(int i=0;i<24;i++){
@@ -36,7 +36,7 @@ dml_s dml_init(float* parms, const array<int, 24>& Y, int count, float* coef){
 	return dml;
 }
 
-double dml_comp(dml_s dml, float* coef){
+double dml_comp(dml_s dml, double* coef){
 	return dml.x * dml.A / ( coef[11] * dml.B + coef[12] * dml.C + coef[10] * dml.D );
 }
 
