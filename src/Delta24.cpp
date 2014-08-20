@@ -340,14 +340,19 @@ void compute( char* filename, size_t start, size_t stop ){
 		}
 
 		if (passes > 15){
-			cerr << "Failure to converge\n";
+			//cerr << "Failure to converge\n";
+			delta[D-start] = -42.0;
+		} else {
+			delta[D-start] = D_curr;
 		}
-
-		delta[D-start] = D_curr;
 	}
 
-	for( int i=0; i<( stop-start ); i++){
-		cout << "D=" << i+start << " Delta=" << delta[i] << endl;
+	for( uint i=0; i<( stop-start ); i++){
+		if( delta[i] == -42.0){
+			cout << "D=" << i+start << " Delta=" << "NC" << endl;
+		} else {
+			cout << "D=" << i+start << " Delta=" << delta[i] << endl;
+		}
 	}
 }
 
