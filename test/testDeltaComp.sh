@@ -51,7 +51,7 @@ cut -f 2 mlrho.out.bak > mlrho.out
 cut -f 2 delta24.out.bak > delta24.out
 
 echo Mean Delta24 Error
-paste delta24.out delta.out | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {avg+=abs($1-$2)}END{print avg/NR}'
+paste delta24.out delta.out | grep -v NC | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {avg+=abs($1-$2)}END{print avg/NR}'
 
 echo Mean mlRho Error
 paste mlrho.out delta.out | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {avg+=abs($1-$2)}END{print avg/NR}'
