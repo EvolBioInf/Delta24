@@ -2,6 +2,8 @@
 #include <tuple>
 #include <vector>
 #include <utility>
+#include <string>
+#include <functional>
 
 #include "SamFile.h"
 #include "SamFlag.h"
@@ -40,36 +42,14 @@ mappedReads_t bam24( char * filename){
 
 	SamRecord record, next_record;
 
-	size_t counter = 0;
 	// Get the next read.
 	while( file.ReadRecord(header, record)){
-		size_t seqID = counter++;
+		string str (record.getReadName());
+		std::hash<std::string> str_hash;
+		size_t seqID = str_hash(str);
 
 		ssize_t start = record.get0BasedPosition();
 		ssize_t length = record.getReadLength();
-
-		// Our simulations does not contain paired end reads. So the following
-		// code is not yet checked for correctness.
-		/* if( SamFlag::isProperPair( record.getFlag())){
-			file.ReadRecord( header, next_record);
-			int id2 = next_record.getReferenceID();
-
-			auto start1 = next_record.get0BasedPosition();
-			auto end1 = next_record.get0BasedAlignmentEnd();
-
-			for( size_t i= 0; end1 > start1 && i< size_t(end1 - start1); i++){
-				cout << i << endl;
-				int inner = next_record.getCigarInfo()->getQueryIndex(i);
-
-				if( inner > 0){
-					if( (*ret)[inner] == NULL){
-						(*ret)[inner] = new vector<entry>();
-					}
-					entry p = make_pair(id2, next_record.getSequence(inner));
-					(*ret)[inner]->push_back(p);
-				}
-			}
-		} */
 
 		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ) continue;
 
