@@ -1,5 +1,6 @@
 #include <vector>
 #include <list>
+#include <unordered_map>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,14 +28,43 @@
 #include <unistd.h>
 #include <sys/sysinfo.h> 
 
-#include "matHash.hpp"
 #include "bam24.hpp"
 #include "dml.hpp"
 
 using namespace std;
 
 // use count_t instead of uint, so we might be able to switch types in a future version
-typedef unsigned int count_t;
+typedef int count_t;
+
+/* uncomment for unordered hash map */
+
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v){
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+
+// A stupid hash function. Not sure if there might be a better idea.
+struct matHashFn {
+	std::size_t operator()( std::array<count_t, 24> key) const {
+		std::size_t ret = 0;
+		for( std::size_t i=0; i<24; i++){
+			hash_combine(ret, key[i]);
+		}
+		return ret;
+	}
+};
+
+typedef unordered_map< array<count_t, 24>, count_t, matHashFn> map_t;
+
+void inc( map_t& map, const array<count_t, 24>& key ){
+	auto elem = map.find(key);
+	if( elem != map.end()){
+		elem->second++;
+	} else {
+		map.insert(map_t::value_type(key,1));
+	}
+}
 
 /**
  * @brief Maps nucleotides to a two bit code.
@@ -53,9 +83,9 @@ inline static count_t char2uint( const char& c){
 /**
  * This function does some sorting and counting.
  */
-matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
+map_t make_sorted_count ( size_t distance, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end){
 
-	matHash *matCounts = new matHash();
+	map_t matCounts{};
 
 	mappedReads_t::const_iterator I = begin;
 	mappedReads_t::const_iterator J = begin;
@@ -127,14 +157,16 @@ matHash* make_sorted_count ( size_t distance, const mappedReads_t::const_iterato
 			count[ sortB[ ji->getCode() ] + 4]++;
 		}
 
-		matCounts->inc(count);
+		inc( matCounts, count);
 	}
 
 	return matCounts;
 }
 
-void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
+map_t make_four_count ( const mappedReads_t::const_iterator begin, const mappedReads_t::const_iterator end ){
 	
+	map_t matCounts{};
+
 	// Iterate over all elements.
 	for (auto i = begin; i != end; ++i){
 		// Deal with positions without mapped reads.
@@ -142,18 +174,19 @@ void make_four_count ( matHash matCounts, const mappedReads_t::const_iterator be
 		count.fill(0);
 
 		if( i->empty() == true ) {
-			matCounts.inc(count);
+			inc( matCounts, count);
 			continue;
 		}
 
 		// Count the number of mapped reads at this position.
-		//for( auto j = i->begin(); j != i->end(); ++j){
 		for( auto j: *i){
 			count[ j.getCode() ]++;
 		}
 
-		matCounts.inc(count);
+		inc( matCounts, count);
 	}
+
+	return matCounts;
 }
 
 void setcoef(float *coef, float pi, float eps, float delta){
@@ -184,15 +217,9 @@ void compute( char* filename, size_t start, size_t stop ){
 	cout << start << ", " << stop << endl;
 	cout << "Starting main loop.\n";
 
-	auto matCounts = matHash();
 	mappedReads_t foobar = bam24(filename);
 
-	/* if( foobar == NULL){
-		cerr << "could't read file: " << filename << endl;
-		exit(1);
-	} */
-
-	make_four_count( matCounts, foobar.begin(), foobar.end() );
+	auto matCounts = make_four_count( foobar.begin(), foobar.end() );
 
 	R[0] = 100;
 	R[1] = 100;
@@ -206,8 +233,11 @@ void compute( char* filename, size_t start, size_t stop ){
 		R[0] = R[1] = 0.0;
 
 		for( auto it : matCounts){
-			float *X = it.second;
-			float C = X[24];
+			float X[25];
+			for(int i=0;i<24;i++){
+				X[i] = static_cast<float>(it.first[i]);
+			}
+			int C = it.second;
 			J[0][0] += J00(parms, X, coef) * C;
 			J[0][1] += J01(parms, X, coef) * C;
 			J[1][0] += J10(parms, X, coef) * C;
@@ -251,8 +281,7 @@ void compute( char* filename, size_t start, size_t stop ){
 
 	#pragma omp parallel for
 	for (size_t D = start; D < stop; D++){
-		auto ref = make_sorted_count ( D, foobar.begin(), foobar.end());
-		auto matCounts = *ref;
+		map_t matCounts = make_sorted_count( D, foobar.begin(), foobar.end());
 
 		float dML_prev = 0;
 		float dML_curr = 0;
@@ -266,11 +295,10 @@ void compute( char* filename, size_t start, size_t stop ){
 		vector<dml_s> partial;
 
 		for (auto i = matCounts.begin(); i != matCounts.end(); ++i){
-			partial.push_back(dml_init(parms, i->second, coef ));
+			partial.push_back(dml_init(parms, i->first, i->second, coef ));
 		}
 
 		matCounts.clear();
-		delete ref;
 
 		for( const auto &it: partial){
 			dML_prev += dml_comp(it, coef);
