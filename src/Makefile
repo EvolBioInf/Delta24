@@ -2,7 +2,7 @@ STATGENDIR= ../lib/libStatGen
 LDLIBS= -lStatGen -lz
 LDFLAGS= -L $(STATGENDIR)
 
-CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -O3 -fstack-protector-all -fopenmp
+CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++11 -Wall -W $(LDLIBS) $(LDFLAGS) -O3 -fstack-protector-all -fopenmp
 
 Delta24: Delta24.o matHash.o bam24.o dml.o nucl.o
 	$(CXX) $^ $(CXXFLAGS) -o Delta24
@@ -14,7 +14,7 @@ prof: clean Delta24
 	gprof Delta24 > profile
 
 .PHONY: debug
-debug: CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++0x -Wall -W $(LDLIBS) $(LDFLAGS) -Og -fstack-protector-all
+debug: CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++11 -Wall -W $(LDLIBS) $(LDFLAGS) -Og -fstack-protector-all
 debug: Delta24
 
 clean:
