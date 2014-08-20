@@ -46,7 +46,7 @@ mappedReads_t bam24( char * filename){
 	while( file.ReadRecord(header, record)){
 		string str (record.getReadName());
 		std::hash<std::string> str_hash;
-		size_t seqID = str_hash(str);
+		size_t readID = str_hash(str);
 
 		ssize_t start = record.get0BasedPosition();
 		ssize_t length = record.getReadLength();
@@ -62,7 +62,7 @@ mappedReads_t bam24( char * filename){
 			}
 
 			// add the current nucleotide to the map.
-			Nucl p{seqID, record.getSequence(i)};
+			Nucl p {readID, record.getSequence(i)};
 
 			ret[pos_in_ref].push_back(p);
 		}
