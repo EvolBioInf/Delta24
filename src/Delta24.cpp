@@ -191,23 +191,15 @@ void setcoef(double *coef, double pi, double eps, double delta){
 	coef[14]=(-pow(pi,2)+pi);
 }
 
-void compute( char* filename, size_t start, size_t stop ){
+pair<double,double> compute_pi_eps ( const mappedReads_t& map){
 	double parms[4] = {0.01, 0.01, 0.0, 0.0};
 	double coef[15] = {0};
-	double R[2];
+	double R[2] = { 100, 100};
 	double &pi = parms[0];
 	double &eps = parms[1];
 
-	cout << start << ", " << stop << endl;
-	cout << "Starting main loop.\n";
+	auto matCounts = make_four_count( map.begin(), map.end() );
 
-	mappedReads_t foobar = bam24(filename);
-
-	auto matCounts = make_four_count( foobar.begin(), foobar.end() );
-
-	R[0] = 100;
-	R[1] = 100;
-	
 	// some loop
 	while ( (fabs(R[0])+fabs(R[1]) > 0.00001f )|| std::isnan(R[0]) || std::isnan(R[1]) ){
 		setcoef(coef, pi, eps, 0.0);
@@ -256,10 +248,22 @@ void compute( char* filename, size_t start, size_t stop ){
 		}
 	}
 
-	cout << "Pi=" << pi << ", Epsilon=" << eps  << ", R=" << fabs(R[0])+fabs(R[1]) << endl;
-	cout << "R(" << R[0] << "," << R[1] << ")" << endl;
+	cout << "Pi=" << pi << ", Epsilon=" << eps << endl;
 
 	matCounts.clear();
+
+	return {pi,eps};
+}
+
+void compute( char* filename, size_t start, size_t stop ){
+
+	mappedReads_t foobar = bam24(filename);
+
+	auto pieps = compute_pi_eps(foobar);
+	double pi = pieps.first;
+	double eps = pieps.second;
+
+	double coef[15] = {0};
 
 	std::vector<double> delta( stop - start + 1 );
 
@@ -267,6 +271,7 @@ void compute( char* filename, size_t start, size_t stop ){
 	for (size_t D = start; D <= stop; D++){
 		map_t matCounts = make_sorted_count( D, foobar.begin(), foobar.end());
 
+		double parms[4] = {pi, eps, 0.01, 0.0};
 		double dML_prev = 0;
 		double dML_curr = 0;
 		double &D_curr = parms[2];
