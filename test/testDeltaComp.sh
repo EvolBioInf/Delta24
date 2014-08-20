@@ -40,7 +40,7 @@ echo Distance   Delta
 mlRho -M 0 -m 1 -M 5  | grep '^[1-9]' | awk '{print $1 "\t" $4}' | perl -pe 's/</\t/g' | awk '{print $1 "\t" $3}' | tee mlrho.out
 echo COMMENT Run Delta24
 echo Distance   Delta
-../src/Delta24 test2.bam 1 6 1 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}' | tee delta24.out
+../src/Delta24 test2.bam 1 5 | grep '^D=' | perl -pe 's/=/\t/g;s/,//g' | awk '{print $2 "\t" $4}' | tee delta24.out
 
 mv delta.out delta.out.bak
 mv mlrho.out mlrho.out.bak

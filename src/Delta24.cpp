@@ -263,10 +263,10 @@ void compute( char* filename, size_t start, size_t stop ){
 
 	matCounts.clear();
 
-	std::vector<double> delta( stop - start );
+	std::vector<double> delta( stop - start + 1 );
 
 	#pragma omp parallel for
-	for (size_t D = start; D < stop; D++){
+	for (size_t D = start; D <= stop; D++){
 		map_t matCounts = make_sorted_count( D, foobar.begin(), foobar.end());
 
 		float dML_prev = 0;
@@ -347,7 +347,7 @@ void compute( char* filename, size_t start, size_t stop ){
 		}
 	}
 
-	for( uint i=0; i<( stop-start ); i++){
+	for( uint i=0; i<( stop-start + 1 ); i++){
 		if( delta[i] == -42.0){
 			cout << "D=" << i+start << " Delta=" << "NC" << endl;
 		} else {
