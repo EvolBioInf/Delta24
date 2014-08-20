@@ -3,28 +3,16 @@
 #include <unordered_map>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 
-#include <cstring>
 #include <iostream>
-#include <fstream>
 #include <string>
 
 #include <algorithm>
 #include <numeric>
 
-//needed to read bam files.
-#include "SamFile.h"
-#include "SamFlag.h"
-#include "SamValidation.h"
-
 //The likelihood functions
 #include "PyRoeNewton.h"
-
-//memory managment routines
-#include <unistd.h>
-#include <sys/sysinfo.h> 
 
 #include "mapNucl.hpp"
 #include "dml.hpp"
