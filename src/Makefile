@@ -2,7 +2,7 @@ STATGENDIR= ../lib/libStatGen
 LDLIBS= -lStatGen -lz
 LDFLAGS= -L $(STATGENDIR)
 
-CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++11 -Wall -W $(LDLIBS) $(LDFLAGS) -O3 -fstack-protector-all -fopenmp
+CXXFLAGS= -I $(STATGENDIR)/include -g -std=c++11 -Wall -W $(LDLIBS) $(LDFLAGS) -O3 -fstack-protector -fopenmp
 
 Delta24: Delta24.o mapNucl.o dml.o nucl.o
 	$(CXX) $^ $(CXXFLAGS) -o Delta24
