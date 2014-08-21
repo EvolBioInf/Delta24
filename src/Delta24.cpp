@@ -253,10 +253,11 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 	std::vector<double> delta( length );
 
 	#pragma omp parallel for
-	for (size_t D = start; D <= stop; D += lumping){
+	for (size_t i = 0; i < length; ++i){
+		size_t D = i * lumping + start;
 		count_map_t countMap {};
 
-		for(int l=0; l<lumping; l++){
+		for(uint l=0; l<lumping; l++){
 			make_sorted_count( countMap, D+l, mappedNucls.begin(), mappedNucls.end());
 		}
 
@@ -333,14 +334,14 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 
 		if (passes > 15 || D_curr < -1.0 || D_curr > 1.0){
 			//cerr << "Failure to converge\n";
-			delta[D-start] = -42.0;
+			delta.at(i) = -42.0;
 		} else {
-			delta[D-start] = D_curr;
+			delta.at(i) = D_curr;
 		}
 	}
 
 	for( uint i=0; i< length; i++){
-		if( delta[i] == -42.0){
+		if( delta.at(i) == -42.0){
 			cout << "D=" << i*lumping+start << " Delta=" << "NC" << endl;
 		} else {
 			cout << "D=" << i*lumping+start << " Delta=" << delta[i] << endl;
@@ -351,13 +352,14 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 int main (int argc, char**argv){
 
 	if( argc < 4 ){
-		printf("usage: %s <bam file> <start distance> <stop distance> \n", argv[0]);
+		printf("usage: %s <bam file> <start distance> <stop distance> [lumping]\n", argv[0]);
 		exit(0);
 	}
 
 	size_t start = atoi(argv[2]);
 	size_t stop  = atoi(argv[3]);
-	printf("bam file:%s start distance:%lu stop distance:%lu \n", argv[1], start, stop);
+	size_t lumping = argc >= 5 ? atoi(argv[4]) : 1;
+	printf("bam file:%s start distance:%lu stop distance:%lu lumping:%lu\n", argv[1], start, stop, lumping);
 
-	compute(argv[1], start, stop, 1);
+	compute(argv[1], start, stop, lumping);
 }
