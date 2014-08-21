@@ -55,9 +55,7 @@ void inc( count_map_t& map, const array<count_t, 24>& key ){
 /**
  * This function does some sorting and counting.
  */
-count_map_t make_sorted_count ( size_t distance, const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end){
-
-	count_map_t countMap{};
+void make_sorted_count ( count_map_t& countMap, size_t distance, const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end){
 
 	mapped_nucl_t::const_iterator I = begin;
 	mapped_nucl_t::const_iterator J = begin;
@@ -131,8 +129,6 @@ count_map_t make_sorted_count ( size_t distance, const mapped_nucl_t::const_iter
 
 		inc( countMap, count);
 	}
-
-	return countMap;
 }
 
 count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end ){
@@ -243,7 +239,7 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t& mappedNucls){
 	return {pi,eps};
 }
 
-void compute( const char* filename, size_t start, size_t stop ){
+void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 
 	mapped_nucl_t mappedNucls = mapNucl(filename);
 
@@ -253,11 +249,16 @@ void compute( const char* filename, size_t start, size_t stop ){
 
 	double coef[15] = {0};
 
-	std::vector<double> delta( stop - start + 1 );
+	size_t length = (stop-start)/lumping + 1;
+	std::vector<double> delta( length );
 
 	#pragma omp parallel for
-	for (size_t D = start; D <= stop; D++){
-		count_map_t countMap = make_sorted_count( D, mappedNucls.begin(), mappedNucls.end());
+	for (size_t D = start; D <= stop; D += lumping){
+		count_map_t countMap {};
+
+		for(int l=0; l<lumping; l++){
+			make_sorted_count( countMap, D+l, mappedNucls.begin(), mappedNucls.end());
+		}
 
 		double parms[4] = {pi, eps, 0.01, 0.0};
 		double dML_prev = 0;
@@ -338,11 +339,11 @@ void compute( const char* filename, size_t start, size_t stop ){
 		}
 	}
 
-	for( uint i=0; i<( stop-start + 1 ); i++){
+	for( uint i=0; i< length; i++){
 		if( delta[i] == -42.0){
-			cout << "D=" << i+start << " Delta=" << "NC" << endl;
+			cout << "D=" << i*lumping+start << " Delta=" << "NC" << endl;
 		} else {
-			cout << "D=" << i+start << " Delta=" << delta[i] << endl;
+			cout << "D=" << i*lumping+start << " Delta=" << delta[i] << endl;
 		}
 	}
 }
@@ -358,5 +359,5 @@ int main (int argc, char**argv){
 	size_t stop  = atoi(argv[3]);
 	printf("bam file:%s start distance:%lu stop distance:%lu \n", argv[1], start, stop);
 
-	compute(argv[1], start, stop);
+	compute(argv[1], start, stop, 1);
 }
