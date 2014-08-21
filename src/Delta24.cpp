@@ -23,19 +23,17 @@ using namespace std;
 typedef int count_t;
 typedef array<count_t, 24> count_24mer_t;
 
-/* uncomment for unordered hash map */
-
 template <class T>
-inline void hash_combine(std::size_t& seed, const T& v){
-    std::hash<T> hasher;
+inline void hash_combine( size_t& seed, const T& v){
+    hash<T> hasher;
     seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
 
 // A stupid hash function. Not sure if there might be a better idea.
 struct matHashFn {
-	std::size_t operator()( std::array<count_t, 24> key) const {
-		std::size_t ret = 0;
-		for( std::size_t i=0; i<24; i++){
+	size_t operator()( const array<count_t, 24>& key) const {
+		size_t ret = 0;
+		for( size_t i=0; i<24; i++){
 			hash_combine(ret, key[i]);
 		}
 		return ret;
