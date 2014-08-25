@@ -25,8 +25,7 @@ mapped_nucl_t mapNucl( const char * filename){
 	SamFile file(ErrorHandler::RETURN);
 	SamFileHeader header;
 
-	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ||
-		!file.ReadBamIndex() ){
+	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ){
 		// TODO: throw proper error.
 		throw "Failed to open input file.";
 	}
