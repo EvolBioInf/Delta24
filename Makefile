@@ -1,4 +1,4 @@
-SUBDIRS= src
+SUBDIRS= src docs
 
 .PHONY: subdirs $(SUBDIRS)
 
@@ -11,6 +11,8 @@ all: src
 
 test: src
 	cd test && sh testDeltaComp.sh
+
+code-docs: subdirs
 
 .PHONY: clean
 clean:
