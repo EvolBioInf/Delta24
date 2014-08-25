@@ -1,7 +1,6 @@
 #ifndef _MAPNUCL_HPP_
 #define _MAPNUCL_HPP_ 1
 
-#include <utility>
 #include <vector>
 
 #include "nucl.hpp"

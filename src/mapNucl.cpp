@@ -1,29 +1,25 @@
-#include <iostream>
-#include <tuple>
 #include <vector>
-#include <utility>
 #include <string>
 #include <functional>
 
 #include "SamFile.h"
-#include "SamFlag.h"
 #include "SamValidation.h"
-
-#include <string.h>
-
-#include <assert.h>
 
 #include "mapNucl.hpp"
 
 using namespace std;
 
 
-/**
- * This function reads a BAM/SAM file and maps the read contained
+/** @brief Maps nucleotides to their corresponding position on the
+ * reference sequence.
+ *
+ * This function reads a BAM/SAM file and maps the reads contained
  * within. The resulting datatype is pos -> [(readID, Nuc)] in SML
  * notation. Basically, its a vector with the length of the reference
- * sequence. At each position there is a list of all read which have
- * a nucleotide mapping to that position.
+ * sequence. At each position there is another vector of all reads 
+ * which have a nucleotide mapping to that position.
+ *
+ * @param filename - The path to the BAM/SAM file.
  */
 mapped_nucl_t mapNucl( const char * filename){
 	SamFile file(ErrorHandler::RETURN);
@@ -31,10 +27,12 @@ mapped_nucl_t mapNucl( const char * filename){
 
 	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ||
 		!file.ReadBamIndex() ){
+		// TODO: throw proper error.
 		throw "Failed to open input file.";
 	}
 
 	// Get the Reference Sequence (SQ)
+	// ATM only the first SQ is read.
 	SamHeaderRecord *header_record = header.getNextSQRecord();
 	ssize_t ref_length = atoi(header_record->getTagValue("LN"));
 
@@ -44,6 +42,12 @@ mapped_nucl_t mapNucl( const char * filename){
 
 	// Get the next read.
 	while( file.ReadRecord(header, record)){
+		/* For the computation we need to take track of nucleotides that come from
+		 * the same read. Since two reads can be pairs, but reside at different
+		 * places within a BAM file, this read information must be carried along
+		 * through the whole computation.
+		 * Here I use a hash over the read name (a string) to compute an ID (64bit).
+		 */
 		string str (record.getReadName());
 		std::hash<std::string> str_hash;
 		size_t readID = str_hash(str);
@@ -51,6 +55,7 @@ mapped_nucl_t mapNucl( const char * filename){
 		ssize_t start = record.get0BasedPosition();
 		ssize_t length = record.getReadLength();
 
+		// skip broken records.
 		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ) continue;
 
 		// iterate over the read.
