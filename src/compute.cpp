@@ -123,14 +123,14 @@ void make_sorted_count ( count_map_t& countMap, size_t distance, const mapped_nu
 
 /** @brief Count the ACGT-patterns at each postion.
  *
- * For the computation of \pi and \epsilon the full 24-mer count is not yet
+ * For the computation of pi and epsilon the full 24-mer count is not yet
  * needed. Instead a simple cumulative count of the ACGT-patterns is provided.
  *
  * @param begin - An iterator to the first mapped nucleotide.
  * @param end - An iterator to the last mapper nucleotide.
  * @returns A counting map of the patterns.
  */
-count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end ){
+count_map_t make_four_count ( const mapped_nucl_t::const_iterator& begin, const mapped_nucl_t::const_iterator& end ){
 	
 	count_map_t countMap{};
 
@@ -183,29 +183,43 @@ void setcoef(double *coef, double pi, double eps, double delta){
 	coef[14]=(-pow(pi,2)+pi);
 }
 
-pair<double,double> compute_pi_eps ( const mapped_nucl_t& mappedNucls){
+/** @brief Compute pi and epsilon.
+ *
+ * @param begin - An iterator to the first mapped nucleotide.
+ * @param end - An iterator to the last mapper nucleotide.
+ * @returns A double pair: The first is pi, the second is epsilon.
+ */
+pair<double,double> compute_pi_eps ( const mapped_nucl_t::const_iterator& begin, const mapped_nucl_t::const_iterator& end){
 	double parms[4] = {0.01, 0.01, 0.0, 0.0};
 	double coef[15] = {0};
 	double R[2] = { 100, 100};
 	double &pi = parms[0];
 	double &eps = parms[1];
 
-	auto countMap = make_four_count( mappedNucls.begin(), mappedNucls.end() );
+	auto patternMap = make_four_count( begin, end);
+
+	// Resolve ambiguity.
+	using std::isnan;
 
 	// some loop
-	while ( (fabs(R[0])+fabs(R[1]) > 0.00001f )|| std::isnan(R[0]) || std::isnan(R[1]) ){
+	while ( isnan(R[0]) || isnan(R[1]) || fabs(R[0]) + fabs(R[1]) > 0.00001){
 		setcoef(coef, pi, eps, 0.0);
 		double iJ[2][2], J[2][2];
 
 		J[0][0] = J[0][1] = J[1][0] = J[1][1] = 0.0;
 		R[0] = R[1] = 0.0;
 
-		for( auto it : countMap){
-			double X[25];
-			for(int i=0;i<24;i++){
-				X[i] = static_cast<double>(it.first[i]);
-			}
-			int C = it.second;
+		// iterate over all patterns
+		for( const auto& it : patternMap){
+			// convert to legacy interface
+			double X[25] = {
+				static_cast<double>(it.first[0]),
+				static_cast<double>(it.first[1]),
+				static_cast<double>(it.first[2]),
+				static_cast<double>(it.first[3]),
+				0.0
+			};
+			double C = static_cast<double>(it.second);
 			J[0][0] += J00(parms, X, coef) * C;
 			J[0][1] += J01(parms, X, coef) * C;
 			J[1][0] += J10(parms, X, coef) * C;
@@ -240,9 +254,8 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t& mappedNucls){
 		}
 	}
 
+	// TODO: Find a better way to print information.
 	cout << "Pi=" << pi << ", Epsilon=" << eps << endl;
-
-	countMap.clear();
 
 	return {pi,eps};
 }
@@ -251,7 +264,7 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 
 	mapped_nucl_t mappedNucls = mapNucl(filename);
 
-	auto pieps = compute_pi_eps(mappedNucls);
+	auto pieps = compute_pi_eps( mappedNucls.cbegin(), mappedNucls.cend());
 	double pi = pieps.first;
 	double eps = pieps.second;
 
