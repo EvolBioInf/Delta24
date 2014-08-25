@@ -121,27 +121,36 @@ void make_sorted_count ( count_map_t& countMap, size_t distance, const mapped_nu
 	}
 }
 
+/** @brief Count the ACGT-patterns at each postion.
+ *
+ * For the computation of \pi and \epsilon the full 24-mer count is not yet
+ * needed. Instead a simple cumulative count of the ACGT-patterns is provided.
+ *
+ * @param begin - An iterator to the first mapped nucleotide.
+ * @param end - An iterator to the last mapper nucleotide.
+ * @returns A counting map of the patterns.
+ */
 count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const mapped_nucl_t::const_iterator end ){
 	
 	count_map_t countMap{};
 
-	// Iterate over all elements.
+	// Iterate over all positions.
 	for (auto i = begin; i != end; ++i){
-		// Deal with positions without mapped reads.
-		array<count_t, 24> count;
-		count.fill(0);
+		array<count_t, 24> pattern;
+		pattern.fill(0);
 
+		// Deal with positions without mapped reads.
 		if( i->empty() == true ) {
-			countMap[count]++;
+			countMap[pattern]++;
 			continue;
 		}
 
-		// Count the number of mapped reads at this position.
-		for( auto j: *i){
-			count[ j.getCode() ]++;
+		// Create the ACGT-Pattern from this position.
+		for( const auto& j: *i){
+			pattern[ j.getCode() ]++;
 		}
 
-		countMap[count]++;
+		countMap[pattern]++;
 	}
 
 	return countMap;
