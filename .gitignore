@@ -24,3 +24,5 @@ template*
 *.out
 *.out.bak
 
+docs/html
+docs/latex
