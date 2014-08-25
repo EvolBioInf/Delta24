@@ -42,15 +42,6 @@ struct matHashFn {
 
 typedef unordered_map< count_24mer_t, count_t, matHashFn> count_map_t;
 
-void inc( count_map_t& map, const array<count_t, 24>& key ){
-	auto elem (map.find(key));
-	if( elem != map.end()){
-		elem->second++;
-	} else {
-		map.insert(count_map_t::value_type(key,1));
-	}
-}
-
 /**
  * This function does some sorting and counting.
  */
@@ -126,7 +117,7 @@ void make_sorted_count ( count_map_t& countMap, size_t distance, const mapped_nu
 			count[ sortB[ ji->getCode() ] + 4]++;
 		}
 
-		inc( countMap, count);
+		countMap[count]++;
 	}
 }
 
@@ -141,7 +132,7 @@ count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const m
 		count.fill(0);
 
 		if( i->empty() == true ) {
-			inc( countMap, count);
+			countMap[count]++;
 			continue;
 		}
 
@@ -150,7 +141,7 @@ count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const m
 			count[ j.getCode() ]++;
 		}
 
-		inc( countMap, count);
+		countMap[count]++;
 	}
 
 	return countMap;
