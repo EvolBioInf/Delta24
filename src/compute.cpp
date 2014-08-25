@@ -156,8 +156,17 @@ count_map_t make_four_count ( const mapped_nucl_t::const_iterator begin, const m
 	return countMap;
 }
 
+/** @brief Cache some coefficients.
+ *
+ * These are a set of coefficents that appear numerous times in the likelihood 
+ * calculations. They are computed here for efficency.
+ *
+ * @param coef - Output parameter of the coefficient array.
+ * @param pi - The mutation rate.
+ * @param eps - The epsilon parameter.
+ * @paran delta - The delta parameter.
+ */
 void setcoef(double *coef, double pi, double eps, double delta){
-	//These are a set of coeficents that appear numerous times in the likelihood calculations. They are computed here for efficency.
 	coef[1]=log(0.333333333333333*eps*(-eps + 1));
 	coef[2]=log(0.0555555555555556*pow(eps,2) + 0.166666666666667*eps*(-eps + 1));
 	coef[3]=log(0.111111111111111*pow(eps,2) );
