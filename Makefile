@@ -1,6 +1,6 @@
 SUBDIRS= src docs
 
-.PHONY: subdirs $(SUBDIRS)
+.PHONY: subdirs $(SUBDIRS) code-docs clean
 
 subdirs: $(SUBDIRS)
 
@@ -14,6 +14,5 @@ test: src
 
 code-docs: subdirs
 
-.PHONY: clean
 clean:
 	cd src && $(MAKE) $@

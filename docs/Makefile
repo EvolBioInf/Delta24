@@ -1,4 +1,7 @@
-.PHONY: code-docs
+.PHONY: code-docs none
+
+none:
+
 code-docs:
 	doxygen
 
