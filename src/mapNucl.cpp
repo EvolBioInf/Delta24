@@ -39,7 +39,7 @@ mapped_nucl_t mapNucl( const char * filename){
 	mapped_nucl_t ret { static_cast<size_t>(ref_length), mapped_nucl_t::value_type()};
 
 	SamRecord record, next_record;
-
+	String str;
 	// Get the next read.
 	while( file.ReadRecord(header, record)){
 		// filter for unmapped reads and bad alignments
@@ -66,7 +66,7 @@ mapped_nucl_t mapNucl( const char * filename){
 
 		// skip broken records.
 		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ) continue;
-
+		str = record.getQuality();
 		// iterate over the read.
 		for( ssize_t i = 0; i < length; i++){
 			int pos_in_ref = record.getCigarInfo()->getRefPosition(i, start);
@@ -74,11 +74,12 @@ mapped_nucl_t mapNucl( const char * filename){
 			if( pos_in_ref < 0 || pos_in_ref >= ref_length){
 				continue;
 			}
-
-			// add the current nucleotide to the map.
-			Nucl p {readID, record.getSequence(i)};
-
-			ret[pos_in_ref].push_back(p);
+			if(str[i] - 33 >= 13){
+			  // add the current nucleotide to the map.
+			  Nucl p {readID, record.getSequence(i)};
+			  
+			  ret[pos_in_ref].push_back(p);
+			}
 		}
 	}
 
