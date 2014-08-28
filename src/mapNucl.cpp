@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "SamFile.h"
+#include "SamFlag.h"
 #include "SamValidation.h"
 
 #include "mapNucl.hpp"
@@ -41,6 +42,15 @@ mapped_nucl_t mapNucl( const char * filename){
 
 	// Get the next read.
 	while( file.ReadRecord(header, record)){
+		// filter for unmapped reads and bad alignments
+		auto flag = record.getFlag();
+		bool requirements = SamFlag::isMapped(flag) && !(flag & SamFlag::SECONDARY_ALIGNMENT) &&
+			!SamFlag::isQCFailure(flag) && !SamFlag::isDuplicate(flag) &&
+			!(flag & 0x800 /* supplementary alignment */) &&
+			(SamFlag::isPaired(flag) ? SamFlag::isProperPair(flag) : true);
+
+		if( !requirements ) continue;
+
 		/* For the computation we need to take track of nucleotides that come from
 		 * the same read. Since two reads can be pairs, but reside at different
 		 * places within a BAM file, this read information must be carried along
