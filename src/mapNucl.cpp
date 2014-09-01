@@ -10,6 +10,7 @@
 
 using namespace std;
 
+const unsigned char MIN_QUAL = '!';
 
 /** @brief Maps nucleotides to their corresponding position on the
  * reference sequence.
@@ -39,7 +40,7 @@ mapped_nucl_t mapNucl( const char * filename){
 	mapped_nucl_t ret { static_cast<size_t>(ref_length), mapped_nucl_t::value_type()};
 
 	SamRecord record, next_record;
-	String str;
+
 	// Get the next read.
 	while( file.ReadRecord(header, record)){
 		// filter for unmapped reads and bad alignments
@@ -58,28 +59,37 @@ mapped_nucl_t mapNucl( const char * filename){
 		 * Here I use a hash over the read name (a string) to compute an ID (64bit).
 		 */
 		string str (record.getReadName());
-		std::hash<std::string> str_hash;
+		std::hash<string> str_hash;
 		size_t readID = str_hash(str);
 
 		ssize_t start = record.get0BasedPosition();
 		ssize_t length = record.getReadLength();
 
 		// skip broken records.
-		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ) continue;
+		if( start < 0 || length < 0 || strcmp(record.getReferenceName(), "*") == 0 ){
+			continue;	
+		}
+
 		str = record.getQuality();
+
 		// iterate over the read.
 		for( ssize_t i = 0; i < length; i++){
 			int pos_in_ref = record.getCigarInfo()->getRefPosition(i, start);
 
+			// skip indels
 			if( pos_in_ref < 0 || pos_in_ref >= ref_length){
 				continue;
 			}
-			if(str[i] - 33 >= 13){
-			  // add the current nucleotide to the map.
-			  Nucl p {readID, record.getSequence(i)};
-			  
-			  ret[pos_in_ref].push_back(p);
+
+			// skip low quality nucleotides
+			if( str[i] < MIN_QUAL){
+				continue;
 			}
+
+			// add the current nucleotide to the map.
+			Nucl p {readID, record.getSequence(i)};
+
+			ret[pos_in_ref].push_back(p);
 		}
 	}
 
