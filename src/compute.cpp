@@ -285,12 +285,12 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 		double parms[4] = {pi, eps, 0.01, 0.0};
 		double dML_prev = 0;
 		double dML_curr = 0;
-		double &D_curr = parms[2];
-		double D_prev = pi;
+		double &delta_curr = parms[2];
+		double delta_prev = pi;
 
-		D_curr = pi;
+		delta_curr = pi;
 
-		setcoef( coef, pi, eps, D_curr);
+		setcoef( coef, pi, eps, delta_curr);
 		
 		vector<dml_s> partial;
 
@@ -304,8 +304,8 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 			dML_prev += dml_comp(it, coef);
 		}
 
-		D_curr = D_prev / 2;
-		setcoef( coef, pi, eps, D_curr);
+		delta_curr = delta_prev / 2;
+		setcoef( coef, pi, eps, delta_curr);
 
 		for( auto it: partial){
 			dML_curr += dml_comp(it, coef);
@@ -327,24 +327,24 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 		 *  ML''(D_n) ≃ (ML'(D_n) - ML'(D_{n-1})) / (D_n - D_{n-1})
 		 *
 		 * Variable Names:
-		 *  D_curr = D_n
-		 *  D_prev = D_{n-1}
+		 *  delta_curr = D_n
+		 *  delta_prev = D_{n-1}
 		 *  ML'(D_n) = dML_curr
 		 *  ML'(D_{n-1}) = dML_prev
 		 *
 		 */
 
 		int passes = 0;
-		while (fabs(D_prev - D_curr) > 0.0000001 && passes <= 15){
-			double slope = (dML_curr - dML_prev) / (D_curr - D_prev);
-			double temp = D_curr - dML_curr / slope;
+		while (fabs(delta_prev - delta_curr) > 0.0000001 && passes <= 15){
+			double slope = (dML_curr - dML_prev) / (delta_curr - delta_prev);
+			double temp = delta_curr - dML_curr / slope;
 
 			dML_prev = dML_curr;
-			D_prev = D_curr;
-			D_curr = temp;
+			delta_prev = delta_curr;
+			delta_curr = temp;
 
 			dML_curr = 0;
-			setcoef( coef, pi, eps, D_curr);
+			setcoef( coef, pi, eps, delta_curr);
 
 			for( auto it: partial){
 				dML_curr += dml_comp(it, coef);
@@ -353,11 +353,11 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 			passes++;
 		}
 
-		if (passes > 15 || D_curr < -1.0 || D_curr > 1.0){
+		if (passes > 15 || delta_curr < -1.0 || delta_curr > 1.0){
 			//cerr << "Failure to converge\n";
 			delta.at(i) = -42.0;
 		} else {
-			delta.at(i) = D_curr;
+			delta.at(i) = delta_curr;
 		}
 	}
 
