@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <stdexcept>
 
 #include "SamFile.h"
 #include "SamFlag.h"
@@ -28,8 +29,7 @@ mapped_nucl_t mapNucl( const char * filename){
 	SamFileHeader header;
 
 	if( !file.OpenForRead(filename) || !file.ReadHeader(header) ){
-		// TODO: throw proper error.
-		throw "Failed to open input file.";
+		throw runtime_error("Failed to open input BAM file.");
 	}
 
 	// Get the Reference Sequence (SQ)
