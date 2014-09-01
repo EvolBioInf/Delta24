@@ -273,6 +273,9 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 	size_t length = (stop-start)/lumping + 1;
 	std::vector<double> delta( length );
 
+	// used to signal non convergence
+	const double NC = -42.0;
+
 	#pragma omp parallel for
 	for (size_t i = 0; i < length; ++i){
 		size_t D = i * lumping + start;
@@ -354,15 +357,14 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 		}
 
 		if (passes > 15 || delta_curr < -1.0 || delta_curr > 1.0){
-			//cerr << "Failure to converge\n";
-			delta.at(i) = -42.0;
+			delta.at(i) = NC;
 		} else {
 			delta.at(i) = delta_curr;
 		}
 	}
 
 	for( uint i=0; i< length; i++){
-		if( delta.at(i) == -42.0){
+		if( delta.at(i) == NC){
 			cout << "D=" << i*lumping+start << " Delta=" << "NC" << endl;
 		} else {
 			cout << "D=" << i*lumping+start << " Delta=" << delta[i] << endl;
