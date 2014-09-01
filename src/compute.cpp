@@ -308,20 +308,20 @@ void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 		
 		vector<dml_s> partial;
 
-		for (auto i = countMap.begin(); i != countMap.end(); ++i){
-			partial.push_back(dml_init(parms, i->first, i->second, coef ));
+		for( const auto& it: countMap){
+			partial.push_back(dml_init(parms, it.first, it.second, coef ));
 		}
 
 		countMap.clear();
 
-		for( const auto &it: partial){
+		for( const auto& it: partial){
 			dML_prev += dml_comp(it, coef);
 		}
 
 		delta_curr = delta_prev / 2;
 		setcoef( coef, pi, eps, delta_curr);
 
-		for( auto it: partial){
+		for( const auto& it: partial){
 			dML_curr += dml_comp(it, coef);
 		}
 
