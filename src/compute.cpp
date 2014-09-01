@@ -260,6 +260,17 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t::const_iterator& begin,
 	return {pi,eps};
 }
 
+/** @brief The main computing function.
+ *
+ * This function drives the computation. First the reads are mapped, then pi
+ * and epsilon computed and at last all deltas for the different distances
+ * are calculated.
+ *
+ * @param filename - The path to the bam file.
+ * @param start - The smallest distance.
+ * @param stop - The biggest distance.
+ * @param lumping - The lumping size.
+ */
 void compute( const char* filename, size_t start, size_t stop, size_t lumping ){
 
 	mapped_nucl_t mappedNucls = mapNucl(filename);
