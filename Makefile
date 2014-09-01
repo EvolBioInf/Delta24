@@ -13,6 +13,7 @@ test: src
 	cd test && sh testDeltaComp.sh
 
 code-docs: subdirs
+	$(MAKE) -C docs code-docs
 
 clean:
 	cd src && $(MAKE) $@
