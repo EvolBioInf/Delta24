@@ -201,6 +201,8 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t::const_iterator& begin,
 	// Resolve ambiguity.
 	using std::isnan;
 
+	size_t counter = 1000;
+
 	// some loop
 	while ( isnan(R[0]) || isnan(R[1]) || fabs(R[0]) + fabs(R[1]) > 0.00001){
 		setcoef(coef, pi, eps, 0.0);
@@ -251,6 +253,11 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t::const_iterator& begin,
 			eps-= R[1];
 		} else {
 			eps/= 2.0;
+		}
+
+		if( counter-- == 0){
+			cerr << "Pi calculation does not converge." << endl;
+			abort();
 		}
 	}
 
