@@ -257,6 +257,8 @@ pair<double,double> compute_pi_eps ( const mapped_nucl_t::const_iterator& begin,
 
 		if( counter-- == 0){
 			cerr << "Pi calculation does not converge." << endl;
+			cout << R[0] << " " << R[1] << endl;
+			cout << pi << " " << eps << endl;
 			abort();
 		}
 	}
